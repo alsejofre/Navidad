@@ -1,0 +1,6 @@
+# Contenido personal en claro: NUNCA se sube
+privado/
+.env
+node_modules/
+__pycache__/
+.DS_Store
