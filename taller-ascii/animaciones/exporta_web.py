@@ -4,8 +4,9 @@
 Graba l'arbre 3D (arbre_giratori.py) i el desa com UN SOL fitxer .html autònom: s'obre al navegador
 del mòbil o de l'ordinador sense internet ni res instal·lat. Ideal per enviar per WhatsApp.
 
-Els fotogrames van comprimits (gzip + base64) dins del mateix HTML i es descomprimeixen al
-navegador amb DecompressionStream (Chrome/Edge/Firefox moderns, Safari 16.4+).
+Els fotogrames van en base64 dins del mateix HTML. Per defecte SENSE comprimir: així també
+funciona a la vista prèvia de WhatsApp a l'iPhone, que no té DecompressionStream.
+Amb --comprimit van amb gzip (fitxer ~40% més petit, però només per a navegadors moderns).
 Per defecte fa un format vertical, pensat per al mòbil.
 """
 import argparse
@@ -45,14 +46,21 @@ PLANTILLA = r"""<!doctype html>
 <script>
 const W = __W__, H = __H__, FPS = __FPS__, BUCLE = __BUCLE__, N = __N__;
 const OFFSETS = [__OFFSETS__];
+const COMPRIMIT = __COMPRIMIT__;
 const DADES = "__DADES__";
 (async () => {
   const avis = document.getElementById('avis');
   let bytes;
   try {
-    const bin = Uint8Array.from(atob(DADES), (c) => c.charCodeAt(0));
-    const flux = new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'));
-    bytes = new Uint8Array(await new Response(flux).arrayBuffer());
+    const s = atob(DADES);
+    const bin = new Uint8Array(s.length);
+    for (let k = 0; k < s.length; k++) bin[k] = s.charCodeAt(k);
+    if (COMPRIMIT) {
+      const flux = new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'));
+      bytes = new Uint8Array(await new Response(flux).arrayBuffer());
+    } else {
+      bytes = bin;
+    }
   } catch (e) {
     avis.textContent = "El teu navegador no pot obrir l'animació. Prova-ho amb Chrome o Safari actualitzat.";
     return;
@@ -117,6 +125,7 @@ def main():
     ap.add_argument('--fps', type=float, default=12)
     ap.add_argument('--missatge', default='Bon Nadal!')
     ap.add_argument('--titol', default='Bon Nadal! 🎄')
+    ap.add_argument('--comprimit', action='store_true', help='gzip: més petit, però no obre a la vista prèvia de WhatsApp (iPhone)')
     args = ap.parse_args()
 
     W, H = (int(v) for v in args.mida.lower().split('x'))
@@ -140,11 +149,12 @@ def main():
         print(f'\rFotograma {i + 1}/{total}', end='', file=sys.stderr)
     print(file=sys.stderr)
 
-    dades = base64.b64encode(gzip.compress(b''.join(blocs), 9)).decode()
+    cru = b''.join(blocs)
+    dades = base64.b64encode(gzip.compress(cru, 9) if args.comprimit else cru).decode()
     html = (PLANTILLA.replace('__TITOL__', args.titol)
             .replace('__W__', str(W)).replace('__H__', str(H)).replace('__FPS__', str(args.fps))
             .replace('__BUCLE__', str(int(T_SENSE_INTRO * args.fps))).replace('__N__', str(total))
-            .replace('__OFFSETS__', ','.join(map(str, offsets))).replace('__DADES__', dades))
+            .replace('__OFFSETS__', ','.join(map(str, offsets))).replace('__COMPRIMIT__', 'true' if args.comprimit else 'false').replace('__DADES__', dades))
     with open(args.sortida, 'w', encoding='utf-8') as f:
         f.write(html)
     print(f'✓ {args.sortida} ({len(html) / 1e6:.1f} MB)', file=sys.stderr)
