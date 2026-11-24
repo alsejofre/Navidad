@@ -1,0 +1,33 @@
+name: Publicar calendari
+
+on:
+  push:
+    branches: [main]
+    paths: ['adviento/**', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  desplega:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: No publicar el contingut d'exemple en clar
+        run: rm -f adviento/contingut.exemple.json
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: adviento
+      - id: deployment
+        uses: actions/deploy-pages@v4

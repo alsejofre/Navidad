@@ -105,6 +105,13 @@ Si un día tiene pista (`diesPista`), se muestra **además** de su contenido nor
 - Hoy: 23-11-2026. **Fecha límite para publicar: 30-11-2026** (el 1 de diciembre ella abre la primera casilla).
 - Orden de trabajo: 1) estructura y web funcionando con el contenido de ejemplo → 2) cifrado y despliegue → 3) recogida de ideas y redacción de los 24 días → 4) taller ASCII (puede seguir creciendo en diciembre).
 
+## Estado (24-11-2026)
+
+- Web hecha y probada con Playwright en un móvil emulado: bloqueo, graella, juegos (trivia, endevinalla, memory), cupones y cartera, pistas, pantalla del 14 y música.
+- `adviento/contingut.enc.json` contiene **el contenido de ejemplo cifrado con la clave de prueba «prova»**. Hay que sustituirlo por el real (`node herramientas/xifrar.mjs --nou-salt`) y cambiar la `pregunta` de `config.json` antes del 30-11.
+- Probar en local: `python3 -m http.server -d adviento 8123` y abrir `http://localhost:8123/?prova=1&dia=14` (el parámetro `dia` simula la fecha).
+- El workflow de Pages elimina `contingut.exemple.json` antes de publicar.
+
 ## Pendiente o abierto
 
 - Decidir el **regalo** y escribir las 3 pistas.

@@ -1,0 +1,237 @@
+{
+  "_nota": "CONTINGUT INVENTAT D'EXEMPLE. El de veritat va a privado/contingut.json (no es puja).",
+  "nom": "Bitxo",
+  "regal": {
+    "diesPista": [
+      10,
+      12,
+      13
+    ],
+    "pistes": [
+      "Pista d'exemple 1: no és gaire gran, però farà molt de goig.",
+      "Pista d'exemple 2: té a veure amb una cosa que dius sovint.",
+      "Pista d'exemple 3: el dia 14 no l'obriràs aquí... 😏"
+    ],
+    "espelmes": 5,
+    "missatgeAniversari": "Bitxo,\n\nAvui fas anys i jo tinc la sort de celebrar-los amb tu.\n\n(Aquí anirà la carta de veritat: llarga, bonica i amb tot el que et vull dir.)",
+    "tancament": "La sorpresa final te la dono jo 🎁"
+  },
+  "dies": {
+    "1": {
+      "tipus": "missatge",
+      "titol": "Comença el compte enrere",
+      "text": "Benvinguda al teu calendari d'advent!\n\nCada dia, una casella. Res de fer trampes, eh? 👀",
+      "ascii": "          *\n         /.\\\n        /..'\\\n        /'.'\\\n       /.''.'\\\n       /.'.'.\\\n      /'.''.'.\\\n      ^^^[_]^^^"
+    },
+    "2": {
+      "tipus": "cupo",
+      "titol": "Val per un massatge",
+      "text": "15 minuts de massatge, on vulguis i quan vulguis.",
+      "condicions": "Vàlid fins al 31 de gener. No acumulable (bé... ja en parlarem)."
+    },
+    "3": {
+      "tipus": "joc",
+      "joc": "trivia",
+      "titol": "Quant ens coneixem?",
+      "preguntes": [
+        {
+          "q": "On vam tenir la primera cita?",
+          "opcions": [
+            "Opció A",
+            "Opció B",
+            "Opció C"
+          ],
+          "correcta": 1
+        },
+        {
+          "q": "Quin és el meu menjar preferit?",
+          "opcions": [
+            "Pizza",
+            "Sushi",
+            "Croquetes"
+          ],
+          "correcta": 2
+        },
+        {
+          "q": "Qui va dir «t'estimo» primer?",
+          "opcions": [
+            "Tu",
+            "Jo",
+            "Tots dos alhora"
+          ],
+          "correcta": 0
+        }
+      ],
+      "premi": "Premi: avui tries tu el sopar 🍕"
+    },
+    "4": {
+      "tipus": "humor",
+      "titol": "Retrat oficial",
+      "text": "He contractat un artista per fer-te un retrat. Aquí el tens:",
+      "ascii": "        \\   /\n         \\_/\n      .-\"\" \"\"-.\n     /  o | o  \\\n    |  ___|___  |\n    | ( o | o ) |\n     \\  o | o  /\n      '-._|_.-'\n     el teu bitxo"
+    },
+    "5": {
+      "tipus": "missatge",
+      "titol": "Un record",
+      "text": "(Aquí anirà un record vostre, amb foto si vols.)"
+    },
+    "6": {
+      "tipus": "joc",
+      "joc": "endevinalla",
+      "titol": "Endevinalla",
+      "pregunta": "Blanc com la neu, i quan fa calor, plora. Què és?",
+      "respostes": [
+        "ninot de neu",
+        "el ninot de neu",
+        "un ninot de neu"
+      ],
+      "pistes": [
+        "Té un nas de pastanaga.",
+        "Es fa al jardí quan neva."
+      ],
+      "premi": "Molt bé! ⛄",
+      "ascii": "       _===_\n       (.,.)\n     >( : )<\n     ( : : )\n    ~~~~~~~~~"
+    },
+    "7": {
+      "tipus": "cupo",
+      "titol": "Val per triar la peli",
+      "text": "Tu tries la peli i jo no em queixo. Ni una mica.",
+      "condicions": "Inclou crispetes."
+    },
+    "8": {
+      "tipus": "humor",
+      "titol": "Broma interna",
+      "text": "(Aquí anirà una d'aquelles bromes que només entenem nosaltres 😂)"
+    },
+    "9": {
+      "tipus": "joc",
+      "joc": "memory",
+      "titol": "Memory nadalenc",
+      "parelles": [
+        "🎄",
+        "🎁",
+        "⛄",
+        "🦌",
+        "🍪",
+        "🐞"
+      ],
+      "premi": "Campiona! 🏆 Premi: una abraçada de 30 segons."
+    },
+    "10": {
+      "tipus": "missatge",
+      "titol": "Coses que m'encanten de tu (I)",
+      "text": "1. Com rius.\n2. (...)\n3. (...)"
+    },
+    "11": {
+      "tipus": "cupo",
+      "titol": "Val per un esmorzar al llit",
+      "text": "Torrades, suc i cafè. Servei inclòs.",
+      "condicions": "Avisa amb un dia d'antelació."
+    },
+    "12": {
+      "tipus": "humor",
+      "titol": "Previsió del temps",
+      "text": "Avui: 100% de probabilitat de petons. Porta paraigua. 💋"
+    },
+    "13": {
+      "tipus": "joc",
+      "joc": "endevinalla",
+      "titol": "Última pista abans del gran dia",
+      "pregunta": "Quin dia és demà? 😏",
+      "respostes": [
+        "14",
+        "el 14",
+        "dia 14",
+        "el meu aniversari",
+        "aniversari"
+      ],
+      "premi": "Exacte! Demà és el TEU dia. 🎂"
+    },
+    "15": {
+      "tipus": "missatge",
+      "titol": "Ressaca d'aniversari",
+      "text": "Com estàs després d'ahir? Espero que encara somriguis. 😊",
+      "ascii": "   .-\"\"\"-. .-\"\"\"-.\n  /       V       \\\n  \\               /\n   '.           .'\n     '.       .'\n       '.   .'\n         'V'"
+    },
+    "16": {
+      "tipus": "cupo",
+      "titol": "Val per un dia sense fregar plats",
+      "text": "Avui els plats són cosa meva.",
+      "condicions": "Un sol ús."
+    },
+    "17": {
+      "tipus": "joc",
+      "joc": "trivia",
+      "titol": "Trivia nadalenca",
+      "preguntes": [
+        {
+          "q": "Com es diu el tió quan caga?",
+          "opcions": [
+            "Caga tió!",
+            "Tió de Nadal",
+            "Les dues"
+          ],
+          "correcta": 2
+        },
+        {
+          "q": "Quants dies té l'advent d'aquest calendari?",
+          "opcions": [
+            "24",
+            "25",
+            "31"
+          ],
+          "correcta": 0
+        }
+      ],
+      "premi": "Ets una experta en Nadal 🎅"
+    },
+    "18": {
+      "tipus": "humor",
+      "titol": "Notícia d'última hora",
+      "text": "Es confirma: el bitxo més bonic del món viu a casa nostra. 🐞"
+    },
+    "19": {
+      "tipus": "missatge",
+      "titol": "Coses que m'encanten de tu (II)",
+      "text": "4. (...)\n5. (...)\n6. (...)"
+    },
+    "20": {
+      "tipus": "cupo",
+      "titol": "Val per una escapada",
+      "text": "Tu tries el lloc, jo m'encarrego de la resta.",
+      "condicions": "Cal planificar-ho junts. 🗺️"
+    },
+    "21": {
+      "tipus": "joc",
+      "joc": "memory",
+      "titol": "Memory de nosaltres",
+      "parelles": [
+        "💛",
+        "🐞",
+        "🍕",
+        "🎬",
+        "☕",
+        "🌙",
+        "🐱",
+        "🎶"
+      ],
+      "premi": "Tens memòria d'elefant 🐘"
+    },
+    "22": {
+      "tipus": "humor",
+      "titol": "Avís important",
+      "text": "Falten 2 dies per a Nadal. Comença a pensar què demanaràs... (a part de mi, que ja em tens) 😎"
+    },
+    "23": {
+      "tipus": "missatge",
+      "titol": "Gairebé ja hi som",
+      "text": "Gràcies per aquest any. (Missatge de veritat aquí.)"
+    },
+    "24": {
+      "tipus": "missatge",
+      "titol": "Bon Nadal, Bitxo! 🎄",
+      "text": "Última casella. (Aquí anirà el missatge final del calendari.)",
+      "ascii": "          *\n         /.\\\n        /..'\\\n        /'.'\\\n       /.''.'\\\n       /.'.'.\\\n      /'.''.'.\\\n      ^^^[_]^^^"
+    }
+  }
+}
