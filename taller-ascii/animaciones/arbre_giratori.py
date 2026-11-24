@@ -49,7 +49,8 @@ T_CREIX = (0.0, 4.0)
 T_ESTEL = (3.8, 5.0)
 T_GARLANDA = (4.8, 7.0)
 T_BOLES = (5.4, 8.0)
-T_LLUMS = (7.0, 8.4)
+T_LLUMS = (7.0, 9.4)
+T_MODE = 6.0                           # segons de cada efecte de les garlandes
 T_REGALS = (8.2, 11.0)
 T_TEXT = 11.2
 T_SENSE_INTRO = 13.5
@@ -463,26 +464,47 @@ class Escena:
             local = esfera(rng, (0, 0, 0), radi, dens, color, espec=2.0)
             self.boles.append((centre, local, rng.random()))
 
-        # Llums: petites esferes emissives prop de les puntes
+        # Llums soltes: prop de les puntes de les branques, parpellegen cadascuna al seu ritme
         n_ll = 90
         idx = rng.choice(len(puntes), size=n_ll, replace=len(puntes) < n_ll)
         ll_pos = []
         for i in idx:
             p, d, llarg = puntes[i]
             ll_pos.append(p - d * rng.uniform(0.05, 0.35) * llarg + np.array([0, 0.07, 0]) + rng.normal(0, 0.04, 3))
-        self.llums_pos = np.array(ll_pos)
-        self.llums_col = np.array([COLORS_LLUMS[i] for i in rng.integers(len(COLORS_LLUMS), size=n_ll)])
-        self.llums_fase = rng.random(n_ll) * TAU
-        self.llums_vel = rng.uniform(1.2, 3.6, n_ll)
-        self.llums_ordre = rng.random(n_ll)
-        punts, quin = [], []
-        for i in range(n_ll):
-            e = esfera(rng, self.llums_pos[i], 0.038, dens * 2, (1, 1, 1))
-            punts.append(e.pos)
-            quin.append(np.full(len(e.pos), i))
-        self.llums_punts = np.concatenate(punts)
-        self.llums_quin = np.concatenate(quin)
-        self.llums_nor = _norm(self.llums_punts - self.llums_pos[self.llums_quin])
+        pos = [np.array(ll_pos)]
+        col = [np.array([COLORS_LLUMS[i] for i in rng.integers(len(COLORS_LLUMS), size=n_ll)])]
+        tipus = [np.zeros(n_ll, int)]
+        u = [rng.random(n_ll)]
+
+        # Dues garlandes de lucecitas en espiral: una de llum càlida i una de colors
+        for g, (voltes, desfase, pas) in enumerate([(6.0, 0.0, 0.105), (5.2, math.pi, 0.12)]):
+            mostra = np.linspace(0, 1, 4000)
+            y = 3.98 - mostra * (3.98 - 0.70)
+            th = mostra * TAU * voltes + desfase
+            r = radi_copa(y) * 0.97 + 0.05
+            corba = np.column_stack([r * np.cos(th), y, r * np.sin(th)])
+            llarg = np.concatenate([[0], np.cumsum(np.linalg.norm(np.diff(corba, axis=0), axis=1))])
+            on_va = np.arange(0, llarg[-1], pas)
+            uu = np.interp(on_va, llarg, mostra)
+            pos.append(np.column_stack([np.interp(uu, mostra, corba[:, k]) for k in range(3)])
+                       + rng.normal(0, 0.015, (len(uu), 3)))
+            if g == 0:
+                col.append(np.tile([1.0, 0.80, 0.45], (len(uu), 1)))
+            else:
+                cicle = np.array([(1.0, 0.18, 0.15), (0.25, 1.0, 0.35), (0.30, 0.50, 1.0), (1.0, 0.85, 0.15), (0.95, 0.30, 0.90)])
+                col.append(cicle[np.arange(len(uu)) % len(cicle)])
+            tipus.append(np.full(len(uu), g + 1))
+            u.append(uu)
+
+        self.llums_pos = np.concatenate(pos)
+        self.llums_col = np.concatenate(col)
+        self.llums_tipus = np.concatenate(tipus)
+        self.llums_u = np.concatenate(u)                       # posició al llarg del cable (0 dalt, 1 baix)
+        n_tot = len(self.llums_pos)
+        self.llums_fase = rng.random(n_tot) * TAU
+        self.llums_vel = rng.uniform(1.2, 3.6, n_tot)
+        # ordre d'encesa: les soltes a l'atzar, les garlandes de baix a dalt
+        self.llums_ordre = np.where(self.llums_tipus == 0, rng.random(n_tot), 1 - self.llums_u)
 
         # Com il·lumina cada bombeta les agulles properes (matriu punts × llums)
         punts_i, llums_i, pesos = [], [], []
@@ -491,7 +513,7 @@ class Escena:
             a_prop = np.nonzero(d2 < 0.40 ** 2)[0]
             punts_i.append(a_prop)
             llums_i.append(np.full(len(a_prop), i))
-            pesos.append(np.exp(-d2[a_prop] / (2 * 0.14 ** 2)))
+            pesos.append(np.exp(-d2[a_prop] / (2 * 0.14 ** 2)) * (1.0 if self.llums_tipus[i] == 0 else 0.5))
         self.resp_punt = np.concatenate(punts_i)
         self.resp_llum = np.concatenate(llums_i)
         self.resp_pes = np.concatenate(pesos)
@@ -532,13 +554,31 @@ class Escena:
         ca, sa = math.cos(self.alfa), math.sin(self.alfa)
         return np.column_stack([n[:, 0], n[:, 1] * ca + n[:, 2] * sa, -n[:, 1] * sa + n[:, 2] * ca])
 
+    def _intensitats(self, t):
+        """Brillantor de cada llum (0-1). Les soltes parpellegen; les garlandes canvien d'efecte."""
+        u, tip = self.llums_u, self.llums_tipus
+        centelleig = np.where(np.sin(t * self.llums_vel + self.llums_fase) > -0.25, 1.0, 0.12)
+        cable = tip > 0
+        efectes = [
+            # 1) persecució: ones de llum que baixen pel cable
+            0.45 + 0.55 * (0.5 + 0.5 * np.sin(u * 45 - t * 5 + tip * 2)) ** 2,
+            # 2) centelleig: cada bombeta al seu aire
+            np.where(np.sin(t * self.llums_vel * 1.6 + self.llums_fase) > 0.1, 1.0, 0.18),
+            # 3) respiració: totes alhora, pujant i baixant suaument, amb la de colors a contratemps
+            0.35 + 0.65 * (0.5 + 0.5 * np.sin(t * 1.8 + np.where(tip == 2, math.pi, 0))),
+        ]
+        temps = max(0.0, t - T_LLUMS[1]) / T_MODE
+        actual, seguent = int(temps) % 3, (int(temps) + 1) % 3
+        barreja = limita((temps % 1 - 0.85) / 0.15)            # fos d'un efecte al següent
+        garlanda = efectes[actual] * (1 - barreja) + efectes[seguent] * barreja
+        return np.where(cable, garlanda, centelleig)
+
     # -- l'escena a l'instant t
     def _grups(self, t):
         grups = [self.terra]
         pl = fase(t, T_LLUMS)
-        llums_on = np.sin(t * self.llums_vel + self.llums_fase) > -0.25
         llums_vis = self.llums_ordre <= pl
-        intensitat = np.where(llums_vis, np.where(llums_on, 1.0, 0.12), 0.0)
+        intensitat = np.where(llums_vis, self._intensitats(t), 0.0)
 
         g = fase(t, T_CREIX)
         if g > 0:
@@ -630,14 +670,20 @@ class Escena:
         for i in ordre:
             if not vis[i] or not (0 <= c[i] < W and 0 <= r[i] < F):
                 continue
-            if z[i] > Z[r[i], c[i]] + 0.08:        # amagada darrere les branques
+            if z[i] > Z[r[i], c[i]] + 0.14:        # amagada darrere les branques
                 continue
-            on = inten[i] > 0.5
-            car[r[i], c[i]] = ('@' if z[i] < DIST - 0.6 else 'o') if on else '.'
+            k = inten[i]
+            calida = self.llums_tipus[i] == 1
+            if k > 0.72:
+                ch = ('@' if z[i] < DIST - 0.8 else 'o') if self.llums_tipus[i] == 0 else ('*' if calida else 'o')
+            elif k > 0.4:
+                ch = '+' if calida else 'o'
+            else:
+                ch = '.'
             col = self.llums_col[i]
-            fg[r[i], c[i]] = np.minimum(1, col * (1.0 if on else 0.35) + (0.25 if on else 0))
-            if on:
-                E[r[i], c[i]] += col * 1.0
+            car[r[i], c[i]] = ch
+            fg[r[i], c[i]] = np.minimum(1, col * (0.3 + 0.7 * k) + 0.25 * k ** 2)
+            E[r[i], c[i]] += col * k * (1.0 if self.llums_tipus[i] == 0 else 0.6)
 
     # -- render
     def fotograma(self, t):
