@@ -112,6 +112,14 @@ Si un día tiene pista (`diesPista`), se muestra **además** de su contenido nor
 - Probar en local: `python3 -m http.server -d adviento 8123` y abrir `http://localhost:8123/?prova=1&dia=14` (el parámetro `dia` simula la fecha).
 - El workflow de Pages elimina `contingut.exemple.json` antes de publicar.
 
+## Estado (24-11-2026, tarde)
+
+- El usuario ha rellenado la plantilla: sus respuestas están en `privado/ideas.md` (NO se suben: contienen datos personales y planes que ella no debe ver).
+- Los 24 días están redactados en `privado/contingut.json` (en catalán). Muchos días coinciden con «dos meses» de fechas suyas y el 24 hace tres meses que se conocieron.
+- **No usar en los textos palabras sobre el estado de la relación** (p. ej. «nòvia/xicota») hasta que el usuario lo indique.
+- Nuevo tipo de juego: `"joc": "sopa"` (sopa de letras) con `"paraules": [...]`.
+- `privado/` solo existe en la sesión de Claude y en el ordenador del usuario: cuando cambie, hay que pasarle una copia.
+
 ## Pendiente o abierto
 
 - Decidir el **regalo** y escribir las 3 pistas.

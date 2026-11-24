@@ -450,3 +450,34 @@ header, main { position: relative; z-index: 1; max-width: 720px; margin: 0 auto;
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- Sopa de lletres ---------- */
+.sopa {
+  display: grid;
+  grid-template-columns: repeat(var(--mida), 1fr);
+  gap: 2px;
+  margin: 10px 0;
+  user-select: none;
+}
+.lletra {
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 6px;
+  padding: 0;
+  background: #f3e9d6;
+  color: var(--tinta);
+  font: 700 clamp(.7rem, 3.6vw, 1rem) var(--mono);
+  cursor: pointer;
+}
+.lletra.trobada { background: var(--avet); color: #fff; }
+.lletra.marcada { background: var(--or); color: var(--tinta); }
+.paraules-sopa {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  font-weight: 600;
+}
+.paraules-sopa li.feta { text-decoration: line-through; color: var(--suau); }
