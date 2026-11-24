@@ -51,19 +51,40 @@ export function pintaCartera(contingut, onCanvi) {
     const estat = c[n];
     return el('div', {},
       targetaVal(n, d, estat),
-      !estat.bescanviat && el('div', { class: 'accions' }, el('button', {
-        class: 'boto boto-or',
-        onclick: () => {
-          if (!confirm(`Vols gastar ara el val «${d.titol}»?`)) return;
-          cartera.bescanvia(n);
-          so.fanfarria();
-          pintaCartera(contingut, onCanvi);
-          onCanvi();
-        },
-      }, 'Bescanviar ara')),
+      !estat.bescanviat && botoBescanvi(n, d, () => {
+        pintaCartera(contingut, onCanvi);
+        onCanvi();
+      }),
     );
   }));
 }
+
+// Confirmació dins la pàgina (els navegadors i visors poden bloquejar confirm()).
+function botoBescanvi(n, d, fet) {
+  const caixa = el('div', { class: 'accions' });
+  const inicial = () => caixa.replaceChildren(el('button', {
+    type: 'button',
+    class: 'boto boto-or',
+    onclick: () => caixa.replaceChildren(
+      el('p', { class: 'pregunta-val' }, `Gastes ara «${d.titol || 'aquest val'}»?`),
+      el('button', {
+        type: 'button',
+        class: 'boto',
+        onclick: () => { cartera.bescanvia(n); so.fanfarria(); fet(); },
+      }, 'Sí, el gasto ara!'),
+      el('button', { type: 'button', class: 'boto boto-secundari', onclick: inicial }, 'Encara no'),
+    ),
+  }, 'Bescanviar ara'));
+  inicial();
+  return caixa;
+}
+
+const CASTIGS = [
+  'Càstig: em deus un petó per cada resposta fallada 😘',
+  'Càstig: aquesta setmana la peli la tria jo 🎬',
+  'Càstig: 5 minuts de massatge... però me\'ls fas tu a mi 💆‍♂️',
+  'Càstig: m\'has de cantar una nadala en veu alta 🎤',
+];
 
 // ---------- Dia normal ----------
 export function pintaDia(n, contingut) {
@@ -101,12 +122,26 @@ export function pintaDia(n, contingut) {
     if (d.tipus === 'joc') {
       const jocs = magatzem.llegeix('jocs', {});
       const premi = el('div', { class: 'premi', hidden: !jocs[n] }, d.premi || 'Molt bé! 🏆');
-      const joc = creaJoc(d, () => {
-        magatzem.escriu('jocs', { ...magatzem.llegeix('jocs', {}), [n]: true });
-        premi.hidden = false;
-        premi.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      });
-      parts.push(joc, premi);
+      const castig = el('div', { class: 'castig', hidden: true });
+      const contenidor = el('div');
+      const juga = () => {
+        castig.hidden = true;
+        contenidor.replaceChildren(creaJoc(d, () => {
+          magatzem.escriu('jocs', { ...magatzem.llegeix('jocs', {}), [n]: true });
+          premi.hidden = false;
+          premi.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, () => {
+          castig.replaceChildren(
+            el('p', {}, d.castig || CASTIGS[n % CASTIGS.length]),
+            el('p', { class: 'peu-castig' }, 'El premi, només si ho aconsegueixes 😏'),
+            el('div', { class: 'accions' }, el('button', { type: 'button', class: 'boto', onclick: juga }, 'Tornar-ho a provar')),
+          );
+          castig.hidden = false;
+          castig.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }));
+      };
+      juga();
+      parts.push(contenidor, castig, premi);
     }
   }
 

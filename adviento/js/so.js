@@ -71,25 +71,68 @@ export function bufada() {
   font.start(t);
 }
 
-// ---------- Música de capsa de música (melodia original) ----------
-// Notes MIDI; 0 = silenci. Cada pas dura un temps.
-const MELODIA = [
-  76, 74, 72, 74, 76, 76, 76, 0,
-  74, 74, 76, 79, 77, 76, 74, 0,
-  72, 76, 79, 81, 79, 77, 76, 74,
-  72, 74, 76, 74, 72, 0, 67, 0,
+// ---------- Música: popurri de nadales de domini públic, en capsa de música ----------
+// Cada nota és [MIDI, temps]; 0 = silenci. «baix» és la nota greu de cada compàs.
+const NADALES = [
+  { // Jingle Bells (James Lord Pierpont, 1857) — tornada
+    temps: 0.30, compas: 4,
+    notes: [
+      [76, 1], [76, 1], [76, 2], [76, 1], [76, 1], [76, 2], [76, 1], [79, 1], [72, 1.5], [74, 0.5], [76, 4],
+      [77, 1], [77, 1], [77, 1.5], [77, 0.5], [77, 1], [76, 1], [76, 1], [76, 0.5], [76, 0.5],
+      [76, 1], [74, 1], [74, 1], [76, 1], [74, 2], [79, 2],
+      [76, 1], [76, 1], [76, 2], [76, 1], [76, 1], [76, 2], [76, 1], [79, 1], [72, 1.5], [74, 0.5], [76, 4],
+      [77, 1], [77, 1], [77, 1.5], [77, 0.5], [77, 1], [76, 1], [76, 1], [76, 0.5], [76, 0.5],
+      [79, 1], [79, 1], [77, 1], [74, 1], [72, 4],
+    ],
+    baix: [48, 48, 48, 48, 53, 48, 50, 55, 48, 48, 48, 48, 53, 48, 55, 48],
+  },
+  { // We Wish You a Merry Christmas (tradicional anglesa)
+    temps: 0.36, compas: 3, anacrusi: 1,
+    notes: [
+      [67, 1],
+      [72, 1], [72, 0.5], [74, 0.5], [72, 0.5], [71, 0.5], [69, 1], [69, 1], [69, 1],
+      [74, 1], [74, 0.5], [76, 0.5], [74, 0.5], [72, 0.5], [71, 1], [67, 1], [67, 1],
+      [76, 1], [76, 0.5], [77, 0.5], [76, 0.5], [74, 0.5], [72, 1], [69, 1], [67, 0.5], [67, 0.5],
+      [69, 1], [74, 1], [71, 1], [72, 3],
+    ],
+    baix: [48, 45, 50, 55, 52, 53, 55, 48],
+  },
+  { // Deck the Halls (tradicional gal·lesa)
+    temps: 0.32, compas: 4,
+    notes: [
+      [79, 1.5], [77, 0.5], [76, 1], [74, 1], [72, 1], [74, 1], [76, 1], [72, 1],
+      [74, 0.5], [76, 0.5], [77, 0.5], [74, 0.5], [76, 1.5], [74, 0.5], [72, 1], [71, 1], [72, 2],
+      [79, 1.5], [77, 0.5], [76, 1], [74, 1], [72, 1], [74, 1], [76, 1], [72, 1],
+      [74, 0.5], [76, 0.5], [77, 0.5], [74, 0.5], [76, 1.5], [74, 0.5], [72, 1], [71, 1], [72, 2],
+      [74, 1.5], [76, 0.5], [77, 1], [74, 1], [76, 1.5], [77, 0.5], [79, 1], [74, 1],
+      [76, 0.5], [78, 0.5], [79, 1], [81, 0.5], [83, 0.5], [84, 1], [83, 1], [81, 1], [79, 2],
+      [79, 1.5], [77, 0.5], [76, 1], [74, 1], [72, 1], [74, 1], [76, 1], [72, 1],
+      [81, 0.5], [81, 0.5], [81, 0.5], [81, 0.5], [79, 1.5], [77, 0.5], [76, 1], [74, 1], [72, 2],
+    ],
+    baix: [48, 48, 55, 48, 48, 48, 55, 48, 55, 48, 50, 55, 48, 48, 53, 48],
+  },
 ];
-const BAIX = [48, 55, 53, 55, 48, 53, 55, 48];
-const TEMPS = 0.42;
 const midi = (n) => 440 * 2 ** ((n - 69) / 12);
 
+function campanaMusical(freq, inici, durada) {
+  nota(freq, inici, Math.max(0.6, durada * 1.6), { volum: 0.055 });
+  nota(freq * 2, inici, 0.5, { volum: 0.012 });               // brillantor de capsa de música
+}
+
 function programaVolta() {
-  const t0 = ctx.currentTime + 0.05;
-  MELODIA.forEach((n, i) => {
-    if (n) nota(midi(n), t0 + i * TEMPS, 1.4, { volum: 0.05 });
-  });
-  BAIX.forEach((n, i) => nota(midi(n), t0 + i * TEMPS * 4, TEMPS * 4, { tipus: 'triangle', volum: 0.025 }));
-  temporitzador = setTimeout(() => sonant && programaVolta(), (MELODIA.length * TEMPS - 0.1) * 1000);
+  let t = ctx.currentTime + 0.1;
+  for (const n of NADALES) {
+    let tn = t;
+    for (const [nt, durada] of n.notes) {
+      if (nt) campanaMusical(midi(nt), tn, durada * n.temps);
+      tn += durada * n.temps;
+    }
+    const iniciBaix = t + (n.anacrusi || 0) * n.temps;
+    n.baix.forEach((b, i) => nota(midi(b), iniciBaix + i * n.compas * n.temps, n.compas * n.temps * 0.9,
+      { tipus: 'triangle', volum: 0.03 }));
+    t = tn + n.temps * 2;                                       // petita pausa entre nadales
+  }
+  temporitzador = setTimeout(() => sonant && programaVolta(), (t - ctx.currentTime - 0.15) * 1000);
 }
 
 export function musicaActiva() { return sonant; }

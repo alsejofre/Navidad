@@ -120,6 +120,15 @@ Si un día tiene pista (`diesPista`), se muestra **además** de su contenido nor
 - Nuevo tipo de juego: `"joc": "sopa"` (sopa de letras) con `"paraules": [...]`.
 - `privado/` solo existe en la sesión de Claude y en el ordenador del usuario: cuando cambie, hay que pasarle una copia.
 
+## Estado (25-11-2026)
+
+- **Vista previa privada** (artifact de claude.ai, solo la ve el usuario) con el contenido real y un selector de fecha: se monta en el scratchpad copiando `adviento/` con `modeProva = true` y la fecha por `#dia-N`. Republicarla cada vez que cambie el contenido o el código.
+- **Carta del día 14:** la escribe el usuario en un documento de Claude Docs («Carta per a la Bitxo (dia 14)»). Cuando avise, copiarla a `regal.missatgeAniversari` (y `regal.tancament` si cambia la frase final).
+- **Juegos con castigo:** trivia con menos de la mitad de aciertos, memory con demasiados intentos o rendirse en la adivinanza (botón tras 3 fallos) → recuadro de castigo + «Tornar-ho a provar»; el premio solo se ve al ganar. Castigo propio por día con el campo `castig`; si no hay, uno genérico de `vistes.js`.
+- **Música:** popurrí de villancicos de dominio público (Jingle Bells, We Wish You a Merry Christmas, Deck the Halls) en caja de música (Web Audio).
+- **Estilo de los textos:** usar «convido», nunca «invito».
+- El usuario irá dejando comentarios durante los días: aplicarlos en `privado/contingut.json`, republicar la vista previa y pasarle la copia nueva.
+
 ## Pendiente o abierto
 
 - Decidir el **regalo** y escribir las 3 pistas.

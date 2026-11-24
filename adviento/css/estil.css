@@ -342,6 +342,18 @@ header, main { position: relative; z-index: 1; max-width: 720px; margin: 0 auto;
   white-space: pre-line;
 }
 
+.castig {
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #fbe7e7;
+  border: 2px solid var(--mal);
+  line-height: 1.5;
+}
+.castig p { margin: 0 0 6px; font-weight: 600; }
+.castig .peu-castig { font-weight: 400; font-size: .9rem; color: var(--suau); }
+.pregunta-val { width: 100%; text-align: center; margin: 4px 0; font-weight: 600; }
+
 .memory { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .carta {
   aspect-ratio: 3 / 4;

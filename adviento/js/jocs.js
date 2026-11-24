@@ -1,16 +1,17 @@
-// Minijocs: trivia, endevinalla i memory. Cada joc crida onFet() quan s'acaba.
+// Minijocs: trivia, endevinalla, memory i sopa de lletres.
+// Cada joc crida onFet() si es guanya i onPerd() si es perd (aleshores toca càstig).
 import { el, barreja, tremola } from './util.js';
 import { normalitza } from './xifrat.js';
 import * as so from './so.js';
 
-export function creaJoc(d, onFet) {
+export function creaJoc(d, onFet, onPerd = () => {}) {
   const jocs = { trivia, endevinalla, memory, sopa };
   const crea = jocs[d.joc];
   if (!crea) return el('p', { class: 'buit' }, `(Joc desconegut: ${d.joc})`);
-  return el('div', { class: 'joc' }, crea(d, onFet));
+  return el('div', { class: 'joc' }, crea(d, onFet, onPerd));
 }
 
-function trivia(d, onFet) {
+function trivia(d, onFet, onPerd) {
   const caixa = el('div');
   let i = 0;
   let encerts = 0;
@@ -51,25 +52,37 @@ function trivia(d, onFet) {
   }
 
   function final() {
-    so.fanfarria();
-    caixa.replaceChildren(
-      el('p', { class: 'enunciat' }, `Has encertat ${encerts} de ${d.preguntes.length}!`),
-    );
-    onFet();
+    const total = d.preguntes.length;
+    const aprovat = encerts >= Math.ceil(total / 2);       // cal encertar-ne almenys la meitat
+    if (aprovat) so.fanfarria(); else so.error();
+    caixa.replaceChildren(el('p', { class: 'enunciat' },
+      aprovat ? `Has encertat ${encerts} de ${total}! 🎉` : `Només ${encerts} de ${total}... 😬`));
+    if (aprovat) onFet(); else onPerd();
   }
 
   pregunta();
   return caixa;
 }
 
-function endevinalla(d, onFet) {
+function endevinalla(d, onFet, onPerd) {
   const caixa = el('div');
   const respostes = (d.respostes || []).map(normalitza);
   const pistes = d.pistes || [];
   let pistesVistes = 0;
+  let errors = 0;
   const input = el('input', { type: 'text', placeholder: 'La teva resposta', autocapitalize: 'off', 'aria-label': 'Resposta' });
   const retro = el('p', { class: 'retroaccio' });
   const llistaPistes = el('div');
+  const rendicio = el('div', { class: 'accions', hidden: true }, el('button', {
+    type: 'button',
+    class: 'boto boto-secundari',
+    onclick: () => {
+      so.error();
+      caixa.replaceChildren(el('p', { class: 'retroaccio malament' },
+        `Era «${(d.respostes || [''])[0]}»! 🙈`));
+      onPerd();
+    },
+  }, 'Em rendeixo 🏳️'));
   const botoPista = pistes.length ? el('button', {
     type: 'button',
     class: 'boto boto-or',
@@ -91,16 +104,18 @@ function endevinalla(d, onFet) {
         retro.className = 'retroaccio malament';
         retro.textContent = d.malament || 'Nooo... torna-ho a provar 😜';
         tremola(input);
+        if (++errors >= 3) rendicio.hidden = false;          // després de 3 errors, es pot rendir
       }
     },
   }, input, el('button', { class: 'boto', type: 'submit' }, 'Comprovar'));
 
   caixa.append(el('p', { class: 'enunciat text' }, d.pregunta), form, retro, llistaPistes);
   if (botoPista) caixa.append(el('div', { class: 'accions' }, botoPista));
+  caixa.append(rendicio);
   return caixa;
 }
 
-function memory(d, onFet) {
+function memory(d, onFet, onPerd) {
   const simbols = d.parelles || ['🎄', '🎁', '⛄', '🦌', '🍪', '❄️'];
   const cartes = barreja([...simbols, ...simbols]);
   let girades = [];
@@ -129,9 +144,16 @@ function memory(d, onFet) {
           fetes++;
           if (fetes === simbols.length) {
             setTimeout(() => {
-              so.fanfarria();
-              intents.textContent = `Fet en ${comptador} intents! 🎉`;
-              onFet();
+              const limit = d.maxIntents || simbols.length * 3;
+              if (comptador <= limit) {
+                so.fanfarria();
+                intents.textContent = `Fet en ${comptador} intents! 🎉`;
+                onFet();
+              } else {
+                so.error();
+                intents.textContent = `${comptador} intents... massa! (el màxim era ${limit}) 😜`;
+                onPerd();
+              }
             }, 400);
           }
         } else {
@@ -156,9 +178,18 @@ function memory(d, onFet) {
 function sopa(d, onFet) {
   const paraules = d.paraules.map((p) => normalitza(p).replace(/[^a-z]/g, '').toUpperCase());
   const mida = Math.max(10, ...paraules.map((p) => p.length + 1));
-  let llavor = [...paraules.join('')].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
-  const atzar = () => ((llavor = (llavor * 1664525 + 1013904223) >>> 0) / 2 ** 32);
-  const dirs = [[0, 1], [1, 0], [1, 1], [-1, 1], [0, -1], [-1, 0], [-1, -1], [1, -1]];
+  let llavor = [...paraules.join('')].reduce((a, c) => (Math.imul(a, 31) + c.charCodeAt(0)) >>> 0, 7);
+  const atzar = () => {                                        // mulberry32
+    llavor = (llavor + 0x6D2B79F5) >>> 0;
+    let t = llavor;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const H = [[0, 1]], V = [[1, 0]], D = [[1, 1], [-1, 1]];
+  // Repartiment: sobretot horitzontals, algunes verticals i un parell de diagonals
+  const PATRO = [H, H, V, D, H, V, D, H, H, V];
+  const totes = [...H, ...V, ...D];
   let graella;
   let posicions;
 
@@ -166,9 +197,10 @@ function sopa(d, onFet) {
     graella = Array.from({ length: mida }, () => Array(mida).fill(''));
     posicions = {};
     const ordenades = [...paraules].sort((a, b) => b.length - a.length);
-    const ok = ordenades.every((p) => {
+    const ok = ordenades.every((p, n) => {
+      const permeses = intent < 150 ? PATRO[n % PATRO.length] : totes;
       for (let k = 0; k < 300; k++) {
-        const [dy, dx] = dirs[Math.floor(atzar() * (intent < 100 ? 4 : 8))];
+        const [dy, dx] = permeses[Math.floor(atzar() * permeses.length)];
         const y0 = Math.floor(atzar() * mida);
         const x0 = Math.floor(atzar() * mida);
         const y1 = y0 + dy * (p.length - 1);
