@@ -481,7 +481,7 @@ header, main { position: relative; z-index: 1; max-width: 720px; margin: 0 auto;
   font: 700 clamp(.7rem, 3.6vw, 1rem) var(--mono);
   cursor: pointer;
 }
-.lletra.trobada { background: var(--avet); color: #fff; }
+.lletra.trobada { background: var(--c, #b9d3b0); color: var(--tinta); box-shadow: inset 0 -2px 0 rgba(59, 42, 36, .12); }
 .lletra.marcada { background: var(--or); color: var(--tinta); }
 .paraules-sopa {
   display: flex;
@@ -492,4 +492,5 @@ header, main { position: relative; z-index: 1; max-width: 720px; margin: 0 auto;
   margin: 8px 0 0;
   font-weight: 600;
 }
-.paraules-sopa li.feta { text-decoration: line-through; color: var(--suau); }
+.paraules-sopa li { padding: 2px 8px; border-radius: 999px; }
+.paraules-sopa li.feta { background: var(--c); text-decoration: line-through; text-decoration-color: rgba(59, 42, 36, .45); }

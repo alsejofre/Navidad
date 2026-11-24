@@ -173,6 +173,20 @@ function memory(d, onFet, onPerd) {
 }
 
 // ---------- Sopa de lletres ----------
+// Colors pastel nadalencs, mats i suaus, un per paraula trobada.
+const PASTELS = [
+  '#b9d3b0', // verd sàlvia
+  '#e8b9bc', // rosa empolvat
+  '#ecd9a6', // daurat mantega
+  '#bcd0e0', // blau boira
+  '#d2bfdc', // lila
+  '#f0cbb0', // préssec
+  '#bfdcd2', // menta
+  '#dcaeae', // vermell pàl·lid
+  '#d8c6aa', // galeta
+  '#b3d0cc', // verd aigua
+];
+
 // Paraules en horitzontal, vertical i diagonal (també del revés). Graella fixa per a cada dia
 // (llavor = paraules), perquè si es torna a obrir surti igual.
 function sopa(d, onFet) {
@@ -252,9 +266,16 @@ function sopa(d, onFet) {
     }
     const [p, [a, b, c, e]] = trobada;
     trobades.add(p);
+    const color = PASTELS[paraules.indexOf(p) % PASTELS.length];
     const dy = Math.sign(c - a), dx = Math.sign(e - b);
-    for (let i = 0; i < p.length; i++) cel(a + dy * i, b + dx * i).classList.add('trobada');
-    llista.querySelector(`[data-p="${p}"]`).classList.add('feta');
+    for (let i = 0; i < p.length; i++) {
+      const lletra = cel(a + dy * i, b + dx * i);
+      lletra.classList.add('trobada');
+      lletra.style.setProperty('--c', color);
+    }
+    const li = llista.querySelector(`[data-p="${p}"]`);
+    li.classList.add('feta');
+    li.style.setProperty('--c', color);
     so.campaneta();
     if (trobades.size === paraules.length) {
       so.fanfarria();
