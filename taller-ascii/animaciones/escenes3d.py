@@ -228,6 +228,7 @@ class Escena3D:
     bloom = 0.35
     qualitat = 1.3
     boira = None          # (distància on comença, escala) en metres; None = sense boira
+    boira_lluny = None    # més enllà d'aquesta distància (lluna, estrelles) no hi ha boira
 
     def __init__(self, llavor=11):
         self.W, self.H = self.mida
@@ -305,6 +306,8 @@ class Escena3D:
             att = np.exp(-np.maximum(0, z[tria] - z0) / escala)
             f_em = emis / (emis + llum + 1e-6)
             att = att * (1 - f_em) + (0.3 + 0.7 * att) * f_em
+            if self.boira_lluny:
+                att = np.where(z[tria] > self.boira_lluny, 1.0, att)
             rgb = rgb * att[:, None]
             lum = lum * att
 
