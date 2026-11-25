@@ -2,13 +2,15 @@
 """Uso: python3 pelicula.py [sortida.html] [--mida 240x68] [--fps 12] [--qualitat 1.0]
                            [--png CARPETA] [--terminal] [--escena N]
 
-«Nadal a Barcelona»: curtmetratge ASCII 3D (~60 s) fet amb el motor de l'arbre.
+«Nadal a Barcelona»: curtmetratge ASCII 3D (~86 s) fet amb el motor de l'arbre.
   1. El cotxe vermell (amb l'avet al sostre) baixa per un carrer de l'Eixample il·luminat,
      amb la Sagrada Família al fons.
   2. Una noia rossa i un noi que li treu un cap passegen de la mà sota els llums.
   3. Patinen junts sobre gel, amb l'arbre gegant al fons.
-  4. Arriben davant l'arbre gegant (l'arbre del taller, ×3,4: uns 15 m) i la càmera puja
-     fins a l'estrella.
+  4. Arriben davant l'arbre gegant (l'arbre del taller, ×3,4: uns 15 m), la càmera puja
+     fins a l'estrella i fa la volta a l'arbre.
+  5. Sense tall, la càmera s'allunya i s'enlaira: es veu la ciutat de nit amb la plaça,
+     l'arbre i la pista de gel, i al cel apareix «BON NADAL» en lletres grans fetes d'ASCII.
 Neva durant tota la pel·lícula.
 
 Per defecte desa un HTML a pantalla completa per al navegador de l'ordinador (16:9).
@@ -16,7 +18,7 @@ Tarda uns minuts a renderitzar (és molt detall).
   --png CARPETA   en comptes de l'HTML, desa uns quants fotogrames de mostra.
   --terminal      la renderitza i després la reprodueix a la terminal (cal truecolor i
                   una finestra gran: tantes columnes com --mida).
-  --escena N      només l'escena N (1–4), per provar.
+  --escena N      només l'escena N (1–5), per provar.
 """
 import argparse
 import base64
@@ -39,8 +41,11 @@ from escenes3d import (  # noqa: E402
 )
 
 # Línia de temps (segons)
-ESCENES = [(0.0, 14.0), (14.0, 27.0), (27.0, 40.0), (40.0, 60.0)]
-FOS = 0.7                 # fosa a negre entre escenes
+ESCENES = [(0.0, 14.0), (14.0, 27.0), (27.0, 40.0), (40.0, 68.0), (68.0, 86.0)]
+DURADA = ESCENES[-1][1]
+TALLS = (14.0, 27.0, 40.0)   # canvis d'escena amb fosa a negre (de l'arbre al pla final no hi ha tall)
+FOS = 0.7                 # durada de la fosa
+TEXT_CEL = 'BON NADAL'
 ESCALA_ARBRE = 3.4
 
 
@@ -213,7 +218,7 @@ def motiu(x, y, tipus, radi=0.95):
 
 class Pelicula(Escena3D):
     nom = 'pelicula'
-    durada = 60.0
+    durada = DURADA
     fps = 12
     mida = (240, 68)
     camera = ((0, 0, -10.0), (0, 0, 0))       # referència per a la densitat de punts (a 10 m)
@@ -224,7 +229,7 @@ class Pelicula(Escena3D):
     qualitat = 1.0
     boira = (9.0, 16.0)
 
-    def __init__(self, mida=None, qualitat=1.0, escenes=(1, 2, 3, 4)):
+    def __init__(self, mida=None, qualitat=1.0, escenes=(1, 2, 3, 4, 5)):
         if mida:
             self.mida = mida
         self.qualitat = qualitat
@@ -250,8 +255,11 @@ class Pelicula(Escena3D):
         if 1 in self.escenes or 2 in self.escenes:
             self._carrer()
             self._cotxe()
-        if 3 in self.escenes or 4 in self.escenes:
+        if {3, 4, 5} & set(self.escenes):
             self._placa()
+        if 5 in self.escenes:
+            self._ciutat()
+            self.cartell = cartell_ascii(TEXT_CEL, int(self.W * 0.62), max(7, int(self.H * 0.17)))
         print(f'  escenari construït en {time.time() - t0:.0f} s', file=sys.stderr)
 
     def _carrer(self):
@@ -421,8 +429,8 @@ class Pelicula(Escena3D):
         n = int(math.pi * 45 ** 2 * self.dens_a(14) * 0.008)
         r = 45 * np.sqrt(rng.random(n))
         a = rng.random(n) * TAU
-        grups.append(Grup(np.column_stack([r * np.cos(a), np.zeros(n), r * np.sin(a)]), np.tile([0, 1.0, 0], (n, 1)),
-                          np.tile([0.8, 0.84, 0.92], (n, 1)) * (0.7 + 0.3 * rng.random((n, 1))), 0.5, ao=0.5))
+        self.terra_placa = Grup(np.column_stack([r * np.cos(a), np.zeros(n), r * np.sin(a)]), np.tile([0, 1.0, 0], (n, 1)),
+                                np.tile([0.8, 0.84, 0.92], (n, 1)) * (0.7 + 0.3 * rng.random((n, 1))), 0.5, ao=0.5)
         # Pista de gel davant de l'arbre
         self.pista_c = np.array([0.0, 0.0, -17.0])
 
@@ -499,7 +507,8 @@ class Pelicula(Escena3D):
         base = rng.random((n, 3))
         caixa = np.array([44.0, 22.0, 44.0])
         p = (base - 0.5) * caixa
-        p[:, 1] = np.mod(base[:, 1] * caixa[1] - t * (0.8 + 0.6 * base[:, 0]), caixa[1])
+        y0 = max(0.0, float(self.C[1]) - caixa[1] / 2)
+        p[:, 1] = y0 + np.mod(base[:, 1] * caixa[1] - t * (0.8 + 0.6 * base[:, 0]), caixa[1])
         p[:, 0] += 0.4 * np.sin(t * 0.7 + base[:, 2] * 9)
         p[:, 2] += 0.4 * np.cos(t * 0.5 + base[:, 0] * 9)
         p[:, [0, 2]] = np.mod(p[:, [0, 2]] - centre[[0, 2]] + caixa[[0, 2]] / 2, caixa[[0, 2]]) + centre[[0, 2]] - caixa[[0, 2]] / 2
@@ -523,7 +532,9 @@ class Pelicula(Escena3D):
             return self._escena2(t - ESCENES[1][0])
         if t < ESCENES[3][0]:
             return self._escena3(t - ESCENES[2][0])
-        return self._escena4(t - ESCENES[3][0])
+        if t < ESCENES[4][0]:
+            return self._escena4(t - ESCENES[3][0])
+        return self._escena5(t - ESCENES[4][0])
 
     def _llums_carrer(self, t):
         f = self.llums_carrer_f
@@ -589,7 +600,7 @@ class Pelicula(Escena3D):
         C = pos + tangent * 3.9 + radial * 1.1 + [0, 1.35, 0]
         T = pos + [0, 0.95, 0]
         self.posa_camera(C, T, 60)
-        return uneix([self.placa, self._arbre_gegant(27 + t), gent,
+        return uneix([self.placa, self.terra_placa, self._arbre_gegant(27 + t), gent,
                       particules(rastre, (0.95, 0.98, 1.0), 0.35 * np.tile(1 - k / 60, 2)),
                       particules(self.llums_pista, pal, parp), self._neu(t + 27, C)])
 
@@ -602,39 +613,171 @@ class Pelicula(Escena3D):
         fase = TAU * 0.95 * t if caminant else 0.0
         mirada = 0.0 if caminant else 0.45 * suau((t - 6) / 2)
         gent = parella(self.dens_a(6), pos, -math.pi / 2, fase, 'camina' if caminant else 'quiet', mirada=mirada)  # cap a +z (l'arbre)
-        # Pla 1 (0–7 s): darrere la parella, mirant l'arbre. Pla 2 (7–14): grua cap a l'estrella.
-        # Pla 3 (14–20): pla obert, l'arbre sencer amb la parella petita als peus.
-        if t < 7:
-            p = suau(t / 7)
+        # Pla 1 (0–8 s): darrere la parella, mirant l'arbre. Pla 2 (8–17): grua cap a l'estrella.
+        # Pla 3 (17–28): volta lenta a l'arbre, sencer, amb la parella petita als peus.
+        if t < 8:
+            p = suau(t / 8)
             C = mescla([1.8, 1.7, -19.5], [2.2, 1.9, -15.5], p)
             T = mescla(pos + [0, 1.4, 0], [0, 5.5, 0], 0.25 + 0.35 * p)
             fov = 58
-        elif t < 14:
-            p = suau((t - 7) / 7)
+        elif t < 17:
+            p = suau((t - 8) / 9)
             C = mescla([2.2, 1.9, -15.5], [5.5, 13.0, -17.0], p)
             T = mescla([0, 6.2, 0], [0, 14.0, 0], p)
             fov = 58
         else:
-            p = suau((t - 14) / 6)
-            ang = -1.35 + 0.35 * p
+            p = suau((t - 17) / 11)
+            ang = mescla(-1.35, -0.55, p)
             C = np.array([27 * math.cos(ang), mescla(8.0, 6.5, p), 27 * math.sin(ang)])
             T = np.array([0, 7.0, 0])
             fov = 52
         self.posa_camera(C, T, fov)
-        return uneix([self.placa, self._arbre_gegant(40 + t), gent, self._neu(t + 40, C)])
+        return uneix([self.placa, self.terra_placa, self._arbre_gegant(40 + t), gent, self._neu(t + 40, C)])
+
+    def _escena5(self, t):
+        """Pla final: la càmera s'allunya i s'enlaira; es veu la ciutat, la plaça, l'arbre i la pista,
+        i al cel apareix «BON NADAL» en ASCII."""
+        self.amb, self.difusa, self.exposicio = 0.16, 1.0, 1.1
+        p = suau(t / 13)
+        ang = mescla(-0.55, -0.75, p)
+        radi = mescla(27, 68, p)
+        C = np.array([radi * math.cos(ang), mescla(6.5, 20.0, p), radi * math.sin(ang)])
+        T = mescla([0, 7.0, 0], [0, 14.0, -6.0], p)
+        self.boira = (mescla(30, 60, p), mescla(50, 110, p))
+        self.posa_camera(C, T, mescla(52, 64, p))
+        gent = parella(self.dens_a(6), np.array([0.0, 0.0, -8.5]), -math.pi / 2, 0.0, 'quiet', mirada=0.45)
+        parp = 0.5 + 0.9 * (np.sin(TAU * (t * 0.6 + np.arange(len(self.llums_pista)) * 0.21)) > 0)
+        pal = np.array([(1, .85, .45), (1, .3, .25), (.4, 1, .5), (.45, .6, 1), (1, .9, .2)])[np.arange(len(self.llums_pista)) % 5]
+        llums_ciutat = particules(self.fanals_ciutat, (1.0, 0.82, 0.5), 1.1 + 0.2 * np.sin(t * 3 + self.fanals_ciutat[:, 0]))
+        self._t5 = t
+        terra = self.terra_placa if p < 0.35 else self.terra_placa.copia(np.arange(len(self.terra_placa.pos)) % 4 == 0)
+        return uneix([self.placa, terra, self.ciutat, self._arbre_gegant(68 + t), gent, llums_ciutat,
+                      particules(self.llums_pista, pal, parp), self._neu(t + 68, C)])
+
+    def superposa(self, t, car, fg, Z):
+        """«BON NADAL» al cel, a l'escena final: s'escriu d'esquerra a dreta i brilla."""
+        if not (ESCENES[4][0] + 8.5 <= t < DURADA):
+            return
+        u = t - (ESCENES[4][0] + 8.5)
+        lletres, intensitat = self.cartell
+        h, w = lletres.shape
+        y0 = max(1, int(self.H * 0.06))
+        x0 = (self.W - w) // 2
+        avanc = min(1.0, u / 2.6) * (w + 6)
+        rng = np.random.default_rng(int(t * 9))
+        tinta = lletres != ' '
+        vora = np.zeros((h + 2, w + 4), bool)
+        for dy in (0, 1, 2):
+            for dx in (0, 1, 2, 3, 4):
+                vora[dy:dy + h, dx:dx + w] |= tinta
+        ya, xa = y0 - 1, x0 - 2
+        for y in range(h + 2):
+            for x in range(w + 4):
+                yy, xx = ya + y, xa + x
+                if vora[y, x] and x - 2 <= avanc and 0 <= yy < self.H and 0 <= xx < self.W:
+                    car[yy, xx] = ' '
+                    fg[yy, xx] *= 0.0
+        for y in range(h):
+            for x in range(w):
+                ch = lletres[y, x]
+                if ch == ' ' or x > avanc:
+                    continue
+                aparicio = min(1.0, (avanc - x) / 6)
+                ona = 0.78 + 0.22 * math.sin(t * 2.6 - x * 0.09 + y * 0.3)
+                k = (0.7 + 0.3 * intensitat[y, x]) * ona * aparicio
+                col = np.array([1.0, 0.86, 0.45]) * k + 0.08
+                if rng.random() < 0.012:
+                    col = np.array([1.0, 1.0, 0.95])
+                car[y0 + y, x0 + x] = ch
+                fg[y0 + y, x0 + x] = np.clip(col, 0, 1)
+        # espurnes al voltant del cartell
+        for _ in range(int(14 * min(1.0, u / 2.6))):
+            yy = y0 + rng.integers(-2, h + 2)
+            xx = x0 + rng.integers(-4, w + 4)
+            if 0 <= yy < self.H and 0 <= xx < self.W and car[yy, xx] == ' ':
+                car[yy, xx] = rng.choice(['.', '+', '*', "'"])
+                fg[yy, xx] = (1.0, 0.92, 0.6)
+
+    def _ciutat(self):
+        """Illes de l'Eixample al voltant de la plaça (per al pla final, des de dalt)."""
+        rng = np.random.default_rng(11)
+        grups, fanals = [], []
+        PAS = 56.0
+        d = self.dens_a(90) * 0.9
+        for i in range(-4, 5):
+            for j in range(-4, 4):
+                cx, cz = i * PAS, j * PAS - 6
+                if math.hypot(cx, cz + 6) < 95:
+                    continue
+                h = rng.uniform(17, 24)
+                g = mou(bloc(rng, (36, h, 36), d, (0.46, 0.41, 0.35), 0.2, sense=('-y', '+y')), Ry(0), (cx, h / 2, cz))
+                fin = (np.abs(g.nor[:, 1]) < 0.5) & (np.mod(g.pos[:, 1], 3.0) < 1.3) & \
+                      (hash1(np.floor((g.pos[:, 0] + g.pos[:, 2]) / 2.2) * 7 + np.floor(g.pos[:, 1] / 3) * 13 + i * 31 + j) > 0.55)
+                g.col[fin] = (1.0, 0.78, 0.45)
+                g.emis[fin] = 0.55
+                g.ao = g.ao * 0.4
+                grups.append(g.copia(fin | (rng.random(len(g.pos)) < 0.15)))
+        for k in np.arange(-4.5, 4.6, 1.0):
+            for u in np.arange(-240, 240, 9.0):
+                fanals.append((k * PAS, 4.5, u - 6))
+                fanals.append((u, 4.5, k * PAS - 6))
+        f = np.array(fanals)
+        lluny = np.hypot(f[:, 0], f[:, 2] + 6) > 88
+        self.fanals_ciutat = f[lluny]
+        self.ciutat = uneix(grups)
 
     # --- render amb foses
     def fotograma(self, t):
         car, fg, bg = super().fotograma(t)
-        f = 1.0
-        for a, b in ESCENES:
-            if a <= t < b:
-                f = min(1.0, (t - a) / FOS if a > 0 else 1.0, (b - t) / FOS if b < self.durada else 1.0)
+        f = min(1.0, t / FOS, (DURADA - t) / (FOS * 1.5))
+        for tall in TALLS:
+            if abs(t - tall) < FOS:
+                f = min(f, abs(t - tall) / FOS)
         if f < 1.0:
             fg = (fg * f).astype(np.uint8)
             bg = (bg * f).astype(np.uint8)
             car = np.where(fg.max(-1) < 12, ' ', car)
         return car, fg, bg
+
+
+# ---------------------------------------------------------------- Cartell «BON NADAL» en ASCII
+
+def cartell_ascii(text, amplada, alcada):
+    """Rasteritza el text amb una lletra gruixuda i el converteix a caràcters ASCII triats per
+    forma (com la resta de l'animació). Retorna (caràcters, intensitat) de mida alcada×amplada."""
+    from PIL import Image, ImageDraw, ImageFont
+    from arbre_giratori import GLIF_CARS, GLIF_MAT, GLIF_N2, RAMPA, SX, SY
+    K = 6
+    Wp, Hp = amplada * SX * K, alcada * SY * K
+    font = None
+    for ruta in ('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 'C:/Windows/Fonts/arialbd.ttf',
+                 '/System/Library/Fonts/Supplemental/Arial Bold.ttf', 'DejaVuSans-Bold.ttf'):
+        try:
+            font = ImageFont.truetype(ruta, 100)
+            break
+        except OSError:
+            continue
+    font = font or ImageFont.load_default()
+    caixa = ImageDraw.Draw(Image.new('L', (10, 10))).textbbox((0, 0), text, font=font)
+    tw, th = caixa[2] - caixa[0], caixa[3] - caixa[1]
+    escala = min(Wp / tw, Hp / th) * 0.96
+    font = ImageFont.truetype(font.path, int(100 * escala)) if hasattr(font, 'path') else font
+    caixa = ImageDraw.Draw(Image.new('L', (10, 10))).textbbox((0, 0), text, font=font)
+    im = Image.new('L', (Wp, Hp), 0)
+    ImageDraw.Draw(im).text(((Wp - (caixa[2] - caixa[0])) / 2 - caixa[0], (Hp - (caixa[3] - caixa[1])) / 2 - caixa[1]),
+                            text, font=font, fill=255)
+    a = np.asarray(im, float) / 255
+    sub = a.reshape(alcada * SY, K, amplada * SX, K).mean((1, 3))
+    L4 = sub.reshape(alcada, SY, amplada, SX).transpose(0, 2, 1, 3).reshape(alcada, amplada, 8)
+    tinta = L4 * 0.8
+    car = np.full((alcada, amplada), ' ')
+    ple = (L4 > 0.5).sum(-1)
+    vora = (tinta.sum(-1) > 0.15) & (ple < 8)
+    v = tinta[vora]
+    dist = (v ** 2).sum(1)[:, None] - 2 * v @ GLIF_MAT.T + GLIF_N2[None, :]
+    car[vora] = GLIF_CARS[dist.argmin(1)]
+    car[ple >= 8] = RAMPA[-2]
+    return car, np.clip(L4.mean(-1) * 1.4, 0.35, 1.0)
 
 
 # ---------------------------------------------------------------- Sortides
@@ -739,10 +882,11 @@ def main():
     ap.add_argument('--qualitat', type=float, default=1.0)
     ap.add_argument('--png', help='desa fotogrames de mostra en aquesta carpeta')
     ap.add_argument('--terminal', action='store_true')
-    ap.add_argument('--escena', type=int, help='només una escena (1–4)')
+    ap.add_argument('--escena', type=int, help='només una escena (1–5)')
+    ap.add_argument('--temps', help='amb --png: instants concrets en segons, separats per comes')
     args = ap.parse_args()
     W, H = (int(v) for v in args.mida.lower().split('x'))
-    escenes = (args.escena,) if args.escena else (1, 2, 3, 4)
+    escenes = (args.escena,) if args.escena else (1, 2, 3, 4, 5)
     peli = Pelicula((W, H), args.qualitat, escenes)
     peli.fps = args.fps
     trams = [ESCENES[e - 1] for e in escenes]
@@ -750,6 +894,11 @@ def main():
     if args.png:
         from escenes3d import desa_png
         os.makedirs(args.png, exist_ok=True)
+        if args.temps:
+            for t in (float(v) for v in args.temps.split(',')):
+                desa_png(peli, os.path.join(args.png, f'peli-t{t:05.1f}.png'), t)
+                print(f'  t={t:.1f} desat', file=sys.stderr)
+            return
         for e, (a, b) in zip(escenes, trams):
             for k, f in enumerate((0.15, 0.5, 0.9)):
                 t = a + (b - a) * f
