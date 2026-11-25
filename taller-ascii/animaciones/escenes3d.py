@@ -847,70 +847,116 @@ class Marieta(Escena3D):
 
 
 class Foc(Escena3D):
-    """🔥 Primer pla d'una llar de foc: troncs sobre una graella, flames, brases que bateguen,
-    espurnes que pugen i pedres il·luminades pel foc."""
+    """🔥 Llar de foc de pedra (cada pedra és una peça 3D), repisa de fusta amb espelmes i
+    garlanda, mitjons penjats i, a dins, troncs amb flames, brases i espurnes."""
     nom = 'foc'
     durada = 6.0
-    mida = (72, 38)
-    camera = ((0.9, 1.35, -3.3), (0, 0.85, 0.45))
+    mida = (72, 40)
+    camera = ((1.25, 1.45, -4.7), (0, 1.12, 0.3))
     fov = 52
-    amb = 0.05
-    difusa = 0.35
+    amb = 0.07
+    difusa = 0.42
     bloom = 0.5
-    qualitat = 1.6
+    qualitat = 1.5
 
     def construeix(self):
         rng, d = self.rng, self.dens
-        # Pedres de la llar (arrodonides) en semicercle i terra de pedra
+        TONS = np.array([(0.56, 0.49, 0.43), (0.5, 0.44, 0.4), (0.6, 0.5, 0.4), (0.47, 0.42, 0.39), (0.55, 0.4, 0.33)])
+
+        def pedra(cx, cy, amp, alt):
+            mida = (amp / 2 - 0.018, alt / 2 - 0.018, 0.2)
+            col = TONS[rng.integers(len(TONS))] * rng.uniform(0.85, 1.1)
+            return mou(superellipsoide(rng, mida, 0.42, d, col, 0.25, filtre=lambda p, n: n[:, 2] < 0.3),
+                       Rz(rng.normal(0, 0.03)), (cx + rng.normal(0, 0.01), cy, 0.2))
+
         pedres = []
-        for k in range(11):
-            a = math.pi * (0.05 + 0.9 * k / 10)
-            r = 1.55
-            mida = (rng.uniform(0.22, 0.32), rng.uniform(0.13, 0.2), rng.uniform(0.18, 0.26))
-            col = np.array([0.42, 0.38, 0.35]) * rng.uniform(0.8, 1.1)
-            pedres.append(mou(superellipsoide(rng, mida, 0.6, d, col, 0.3), Ry(rng.uniform(0, 3)),
-                              (r * math.cos(a), mida[1] * 0.8, 0.45 + r * math.sin(a) * 0.75)))
-        n = int(math.pi * 1.7 ** 2 * d * 0.25)
-        rr = 1.7 * np.sqrt(rng.random(n))
-        aa = rng.random(n) * TAU
-        terra = Grup(np.column_stack([rr * np.cos(aa), np.zeros(n), 0.45 + rr * np.sin(aa) * 0.75]),
-                     np.tile([0, 1.0, 0], (n, 1)), np.tile([0.3, 0.27, 0.25], (n, 1)), 0.2, ao=0.45)
-        cendra = Grup(np.column_stack([(rng.random(n // 2) - 0.5) * 1.4, np.full(n // 2, 0.01), 0.45 + (rng.random(n // 2) - 0.5) * 0.7]),
-                      np.tile([0, 1.0, 0], (n // 2, 1)), np.tile([0.25, 0.23, 0.22], (n // 2, 1)), 0.1, ao=0.45)
-        # Graella de ferro
+        FILA = 0.25
+        for fila in range(9):                                   # brancals (costats de la boca)
+            y = 0.125 + fila * FILA
+            desp = 0.16 if fila % 2 else 0.0
+            for s in (-1, 1):
+                x = 1.13 + desp * 0.5
+                while x < 1.8:
+                    amp = min(rng.uniform(0.3, 0.42), 1.84 - x)
+                    if amp > 0.12:
+                        pedres.append(pedra(s * (x + amp / 2), y, amp, FILA))
+                    x += amp
+        for fila, y in enumerate((1.75 + FILA / 2, 1.75 + FILA * 1.5)):   # llinda damunt la boca
+            x = -1.84 + (0.18 if fila % 2 else 0)
+            while x < 1.84:
+                amp = min(rng.uniform(0.3, 0.44), 1.84 - x)
+                if amp > 0.12:
+                    pedres.append(pedra(x + amp / 2, y, amp, FILA))
+                x += amp
+        # Interior fosc (punts escampats: el foc l'il·lumina)
+        fosc = (0.16, 0.11, 0.09)
+        n = int(2.2 * 1.75 * d * 0.18)
+        fons = Grup(np.column_stack([(rng.random(n) - 0.5) * 2.2, rng.random(n) * 1.75, np.full(n, 1.0)]),
+                    np.tile([0, 0, -1.0], (n, 1)), fosc, 0.1, ao=0.6)
+        laterals = []
+        for s in (-1, 1):
+            m = int(0.8 * 1.75 * d * 0.18)
+            laterals.append(Grup(np.column_stack([np.full(m, s * 1.1), rng.random(m) * 1.75, 0.2 + rng.random(m) * 0.8]),
+                                 np.tile([-s, 0, 0.0], (m, 1)), fosc, 0.1, ao=0.6))
+        # Lloses del terra davant la llar
+        lloses = [mou(superellipsoide(rng, (0.27, 0.045, 0.26), 0.35, d, TONS[k % 5] * 0.85, 0.3), t=(-1.65 + k * 0.56, 0.045, -0.32))
+                  for k in range(7)]
+        # Repisa de fusta
+        repisa = [mou(superellipsoide(rng, (2.15, 0.1, 0.34), 0.3, d, (0.45, 0.27, 0.14), 0.9), t=(0, 2.37, 0.05)),
+                  mou(superellipsoide(rng, (2.02, 0.05, 0.27), 0.3, d, (0.36, 0.21, 0.11), 0.6), t=(0, 2.23, 0.08))]
+        # Mitjons
+        vermell, blanc = (0.78, 0.08, 0.1), (0.97, 0.97, 0.95)
+        mitjons = []
+        for s in (-1, 1):
+            x = s * 1.38
+            mitjons += [mou(superellipsoide(rng, (0.13, 0.27, 0.065), 0.55, d * 1.3, vermell, 0.6), t=(x, 1.92, -0.33)),
+                        mou(superellipsoide(rng, (0.17, 0.085, 0.065), 0.55, d * 1.3, vermell, 0.6), t=(x + s * -0.07, 1.66, -0.33)),
+                        mou(superellipsoide(rng, (0.15, 0.065, 0.08), 0.5, d * 1.3, blanc, 0.3), t=(x, 2.15, -0.33))]
+        # Garlanda amb boles vermelles i espelmes a la repisa
+        garlanda = []
+        for k in range(44):
+            xg = -2.05 + k * 4.1 / 44
+            garlanda.append(mou(esfera(rng, 0.075, d * 2, (0.1, 0.38, 0.16), 0.3), t=(xg, 2.5 + 0.03 * math.sin(k), -0.18)))
+            if k % 5 == 2:
+                garlanda.append(mou(esfera(rng, 0.045, d * 3, (0.85, 0.1, 0.12), 1.6), t=(xg, 2.47, -0.27)))
+        espelmes = [mou(cilindre(rng, 0.06, h, d * 2, (0.95, 0.9, 0.78), 0.4), t=(x, 2.47 + h / 2, 0.1))
+                    for x, h in ((-1.55, 0.42), (-1.35, 0.3), (1.45, 0.36))]
+        self.flames_espelma = np.array([(-1.55, 2.95, 0.1), (-1.35, 2.83, 0.1), (1.45, 2.89, 0.1)])
+        nl = 16
+        self.llums = np.column_stack([np.linspace(-1.95, 1.95, nl), 2.56 + 0.03 * np.sin(np.arange(nl)), np.full(nl, -0.24)])
+        # Graella i troncs (igual que abans, dins la boca)
         ferro = (0.16, 0.16, 0.18)
-        graella = [tub(rng, (x, 0.18, 0.15), (x, 0.18, 0.8), 0.022, d * 3, ferro, 1.0) for x in np.linspace(-0.6, 0.6, 7)]
-        graella += [tub(rng, (-0.68, 0.18, z), (0.68, 0.18, z), 0.025, d * 3, ferro, 1.0) for z in (0.15, 0.8)]
-        graella += [tub(rng, (s * 0.68, 0.0, z), (s * 0.68, 0.18, z), 0.025, d * 3, ferro, 1.0) for s in (-1, 1) for z in (0.15, 0.8)]
+        graella = [tub(rng, (x, 0.18, 0.25), (x, 0.18, 0.85), 0.022, d * 3, ferro, 1.0) for x in np.linspace(-0.6, 0.6, 7)]
+        graella += [tub(rng, (-0.68, 0.18, z), (0.68, 0.18, z), 0.025, d * 3, ferro, 1.0) for z in (0.25, 0.85)]
+        graella += [tub(rng, (s * 0.68, 0.0, z), (s * 0.68, 0.18, z), 0.025, d * 3, ferro, 1.0) for s in (-1, 1) for z in (0.25, 0.85)]
 
         def escorca(p, n):
             c = np.tile([0.32, 0.19, 0.1], (len(p), 1)) * (0.75 + 0.35 * rng.random((len(p), 1)))
-            talls = np.abs(p[:, 1]) > 0.8 * np.abs(p[:, 1]).max()
-            c[talls] = (0.6, 0.45, 0.3)
+            c[np.abs(p[:, 1]) > 0.8 * np.abs(p[:, 1]).max()] = (0.6, 0.45, 0.3)
             return c
         self.troncs = uneix([
-            mou(cilindre(rng, 0.15, 1.5, d * 1.5, escorca, 0.25), Rz(math.pi / 2), (0, 0.36, 0.35)),
-            mou(cilindre(rng, 0.14, 1.4, d * 1.5, escorca, 0.25), Rz(math.pi / 2), (0, 0.36, 0.65)),
-            mou(cilindre(rng, 0.13, 1.3, d * 1.5, escorca, 0.25), Ry(0.5) @ Rz(math.pi / 2.4), (0.05, 0.6, 0.5)),
-            mou(cilindre(rng, 0.12, 1.2, d * 1.5, escorca, 0.25), Ry(-0.6) @ Rz(-math.pi / 2.4), (-0.05, 0.62, 0.48)),
+            mou(cilindre(rng, 0.15, 1.45, d * 1.5, escorca, 0.25), Rz(math.pi / 2), (0, 0.36, 0.42)),
+            mou(cilindre(rng, 0.14, 1.35, d * 1.5, escorca, 0.25), Rz(math.pi / 2), (0, 0.36, 0.72)),
+            mou(cilindre(rng, 0.13, 1.25, d * 1.5, escorca, 0.25), Ry(0.5) @ Rz(math.pi / 2.4), (0.05, 0.6, 0.57)),
+            mou(cilindre(rng, 0.12, 1.15, d * 1.5, escorca, 0.25), Ry(-0.6) @ Rz(-math.pi / 2.4), (-0.05, 0.62, 0.55)),
         ])
-        self.estatic = uneix(pedres + [terra, cendra] + graella)
+        self.estatic = uneix(pedres + [fons] + laterals + lloses + repisa + mitjons + garlanda + espelmes + graella)
         self.brases = rng.choice(len(self.troncs.pos), size=len(self.troncs.pos) // 7, replace=False)
         self.brases_f = rng.random(len(self.brases))
         tot = uneix([self.estatic, self.troncs])
-        dist = np.linalg.norm(tot.pos - [0, 0.75, 0.5], axis=1)
-        self.pes_foc = 1 / (1 + (dist / 0.75) ** 2)
+        dist = np.linalg.norm(tot.pos - [0, 0.8, 0.55], axis=1)
+        self.pes_foc = 1 / (1 + (dist / 0.95) ** 2)
         self.n_estatic = len(self.estatic.pos)
-        k = 2400
+        k = 2200
         self.flama = rng.random((k, 5))
         self.flama_per = np.array([6, 7, 8, 9])[rng.integers(4, size=k)]
-        self.espurnes = rng.random((70, 4))
+        self.espurnes = rng.random((60, 4))
 
     def grups(self, t):
         u = t / self.durada
         tremol = 0.8 + 0.12 * math.sin(TAU * 7 * u) + 0.08 * math.sin(TAU * 13 * u + 1)
         tot = uneix([self.estatic, self.troncs])
-        tot.extra = (self.pes_foc * tremol)[:, None] * np.array([1.0, 0.45, 0.12]) * 0.9
+        tot.extra = (self.pes_foc * tremol)[:, None] * np.array([1.0, 0.45, 0.12]) * 0.95
         br = self.n_estatic + self.brases
         tot.col[br] = (1.0, 0.42, 0.08)
         tot.emis[br] = 0.45 + 0.75 * np.clip(np.sin(TAU * (u * 5 + self.brases_f)), 0, 1)
@@ -918,83 +964,130 @@ class Foc(Escena3D):
         a = np.mod(f[:, 0] + u * self.flama_per, 1)
         llengua = np.floor(f[:, 1] * 9)
         cx = -0.6 + llengua * 0.15 + 0.05 * np.sin(TAU * (u * 2 + llengua * 0.3))
-        hmax = (0.7 + 0.8 * hash1(llengua * 3.7 + np.floor(u * 3))) * (1.2 - np.abs(cx) * 0.7)
+        hmax = (0.65 + 0.7 * hash1(llengua * 3.7 + np.floor(u * 3))) * (1.15 - np.abs(cx) * 0.7)
         alt = a * hmax
         ample = 0.12 * (1 - a) ** 0.7 + 0.015
         x = cx + (f[:, 4] - 0.5) * 2 * ample + 0.06 * a * np.sin(TAU * (a * 1.5 + u * 3 + llengua * 0.2))
-        z = 0.35 + f[:, 3] * 0.35
+        z = 0.42 + f[:, 3] * 0.32
         col = np.where(a[:, None] < 0.2, [1.0, 0.95, 0.7], np.where(a[:, None] < 0.45, [1.0, 0.7, 0.2],
                                                                      np.where(a[:, None] < 0.75, [0.97, 0.38, 0.08], [0.55, 0.13, 0.04])))
         flames = particules(np.column_stack([x, 0.5 + alt, z]), col, 1.3 * (1 - a) ** 0.9)
         e = self.espurnes
         ae = np.mod(e[:, 0] + u * 2, 1)
-        esp = np.column_stack([(e[:, 1] - 0.5) * 0.9 + 0.15 * np.sin(TAU * (ae + e[:, 2])), 0.7 + ae * 2.2, 0.3 + e[:, 3] * 0.4])
-        return uneix([tot, flames, particules(esp, (1.0, 0.75, 0.3), 1.1 * (1 - ae) * (ae > 0.05))])
+        esp = np.column_stack([(e[:, 1] - 0.5) * 0.9 + 0.12 * np.sin(TAU * (ae + e[:, 2])), 0.7 + ae * 1.0, 0.45 + e[:, 3] * 0.35])
+        espelmes = self.flames_espelma + np.column_stack([0.01 * np.sin(TAU * (u * 9 + np.arange(3))), np.zeros(3), np.zeros(3)])
+        flama_espelma = np.concatenate([espelmes, espelmes + [0, 0.04, 0]])
+        parp = 0.5 + 0.8 * (np.sin(TAU * (u * 3 + np.arange(len(self.llums)) * 0.37)) > 0)
+        pal = np.array([(1, .85, .45), (1, .3, .25), (.4, 1, .5), (1, .9, .2)])[np.arange(len(self.llums)) % 4]
+        return uneix([tot, flames,
+                      particules(esp, (1.0, 0.75, 0.3), 1.1 * (1 - ae) * (ae > 0.05)),
+                      particules(flama_espelma, (1.0, 0.85, 0.45), np.array([1.4] * 3 + [0.9] * 3)),
+                      particules(self.llums, pal, parp)])
+
+
+def casa(rng, w, h, prof, alt_teulada, d, paret):
+    """Caseta amb teulada a dues aigües nevada, xemeneia, porta i finestres enceses."""
+    grups = []
+    parets = bloc(rng, (w, h, prof), d * 0.8, paret, 0.2, sense=('+y', '+z'))
+    fin = (parets.nor[:, 2] < -0.5) & (np.abs(np.mod(parets.pos[:, 0] + w, 0.55) - 0.275) < 0.11) \
+        & (np.abs(parets.pos[:, 1] - h * 0.12) < 0.16)
+    porta = (parets.nor[:, 2] < -0.5) & (np.abs(parets.pos[:, 0] - w * 0.12) < 0.13) & (parets.pos[:, 1] < -h * 0.12)
+    fin &= ~porta
+    encesa = rng.random() < 0.85
+    if encesa:
+        parets.col[fin] = (1.0, 0.8, 0.45)
+        parets.emis[fin] = 1.0
+    parets.col[porta] = (0.3, 0.17, 0.1)
+    grups.append(mou(parets, t=(0, h / 2, 0)))
+    # Teulada: dos plans inclinats
+    for s in (-1, 1):
+        n = int((w + 0.3) * math.hypot(alt_teulada, prof / 2 + 0.15) * d * 1.2)
+        u, v = rng.random(n) * 2 - 1, rng.random(n)
+        pos = np.column_stack([u * (w / 2 + 0.15), h + alt_teulada * (1 - v), s * v * (prof / 2 + 0.15)])
+        nor = np.tile(_norm(np.array([0, prof / 2 + 0.15, s * alt_teulada])), (n, 1))
+        col = np.tile([0.92, 0.94, 1.0], (n, 1)) * (0.85 + 0.15 * rng.random((n, 1)))
+        col[v > 0.9] = (0.45, 0.25, 0.2)
+        grups.append(Grup(pos, nor, col, 0.6))
+    # Frontó (triangle de la façana)
+    n = int(w * alt_teulada * d * 0.5)
+    x = (rng.random(n) - 0.5) * w
+    y = rng.random(n) * alt_teulada * (1 - np.abs(x) / (w / 2))
+    grups.append(Grup(np.column_stack([x, h + y, np.full(n, -prof / 2)]), np.tile([0, 0, -1.0], (n, 1)),
+                      _col(paret, np.zeros((n, 3)), np.zeros((n, 3))), 0.2))
+    grups.append(mou(bloc(rng, (0.22, 0.5, 0.22), d, (0.4, 0.3, 0.28), 0.2), t=(w * 0.28, h + alt_teulada * 0.75, 0.15)))
+    return uneix(grups)
 
 
 class Focs(Escena3D):
-    """🎆 Focs artificials sobre una ciutat nevada i, després, una estrella fugaz amb «BON NADAL»."""
+    """🎆 Focs artificials sobre un poble nevat i, després, una estrella fugaç gran amb «BON NADAL»."""
     nom = 'focs'
     durada = 17.0
-    mida = (80, 38)
-    camera = ((0, 2.6, -11.5), (0, 5.0, 4))
-    fov = 62
+    mida = (80, 40)
+    camera = ((0, 3.4, -13.0), (0, 5.0, 4))
+    fov = 66
     amb = 0.08
-    difusa = 0.5
+    difusa = 0.55
     bloom = 0.45
     text = 'BON NADAL'
+    ESCALA_ESTEL = 2.6
 
     def construeix(self):
         rng, d = self.rng, self.dens
         edificis = []
-        x = -17.0
-        while x < 17:
+        x = -18.0
+        while x < 18:
             w = rng.uniform(1.2, 2.6)
-            h = rng.uniform(1.8, 6.5)
-            z = rng.uniform(11, 15)
-
-            def facana(p, n, h=h):
-                c = np.tile([0.1, 0.12, 0.18], (len(p), 1))
-                fin = (n[:, 2] < -0.5) & (np.mod(p[:, 0] + 5, 0.45) < 0.2) & (np.mod(p[:, 1] + h / 2, 0.6) < 0.3) & (p[:, 1] < h / 2 - 0.3)
-                c[fin] = (0.08, 0.09, 0.12)
-                return c
-            g = mou(bloc(rng, (w, h, 2), d * 0.5, facana, 0.3, sense=('+z',)), t=(x + w / 2, h / 2, z))
-            fin = (g.nor[:, 2] < -0.5) & (np.mod(g.pos[:, 0] + 5, 0.45) < 0.2) & (np.mod(g.pos[:, 1], 0.6) < 0.3) & (g.pos[:, 1] < h - 0.3) & (rng.random(len(g.pos)) < 0.9)
+            h = rng.uniform(2.5, 6.5)
+            z = rng.uniform(12, 16)
+            g = mou(bloc(rng, (w, h, 2), d * 0.45, (0.1, 0.12, 0.18), 0.3, sense=('+z',)), t=(x + w / 2, h / 2, z))
+            fin = (g.nor[:, 2] < -0.5) & (np.mod(g.pos[:, 0] + 5, 0.45) < 0.2) & (np.mod(g.pos[:, 1], 0.6) < 0.3) & (g.pos[:, 1] < h - 0.3)
             encesa = hash1(np.floor(g.pos[:, 0] / 0.45) * 7 + np.floor(g.pos[:, 1] / 0.6) * 13) > 0.55
             g.col[fin & encesa] = (1.0, 0.8, 0.45)
-            g.emis[fin & encesa] = 0.7
+            g.emis[fin & encesa] = 0.6
+            g.ao = g.ao * 0.7
             edificis.append(g)
             x += w + rng.uniform(0.0, 0.5)
-        n = int(30 * 14 * d * 0.08)
-        terra = Grup(np.column_stack([(rng.random(n) - 0.5) * 30, np.zeros(n), rng.random(n) * 14 - 2]),
-                     np.tile([0, 1.0, 0], (n, 1)), np.tile([0.7, 0.75, 0.85], (n, 1)), 0.5, ao=0.8)
-        self.ciutat = uneix(edificis + [terra, mou(avet(rng, 3.2, d, llums=160), t=(0, 0, 6))])
-        self.estel3d = estel(rng, d * 3.0)
+        # Poble en primer pla: casetes 3D amb teulades nevades
+        cases = []
+        COLORS = [(0.58, 0.36, 0.3), (0.5, 0.45, 0.38), (0.55, 0.47, 0.32), (0.4, 0.43, 0.5), (0.6, 0.52, 0.45)]
+        for k, (xc, zc) in enumerate(((-7.6, -3.2), (-5.0, -4.6), (-2.6, -3.0), (2.8, -3.0), (5.2, -4.6), (7.8, -3.2))):
+            w, h = rng.uniform(1.7, 2.1), rng.uniform(1.2, 1.6)
+            cases.append(mou(casa(rng, w, h, 1.6, rng.uniform(0.8, 1.0), d, COLORS[k % 5]), Ry(rng.normal(0, 0.15)),
+                             (xc, 0, zc)))
+        poble = uneix(cases)
+        n = int(36 * 16 * d * 0.03)
+        terra = Grup(np.column_stack([(rng.random(n) - 0.5) * 36, np.zeros(n), rng.random(n) * 16 - 3]),
+                     np.tile([0, 1.0, 0], (n, 1)), np.tile([0.7, 0.75, 0.85], (n, 1)), 0.5, ao=0.7)
+        avet_gran = mou(avet(rng, 4.6, d, llums=260), t=(0, 0, 6.5))
+        estel_avet = mou(estel(rng, d * 3), None, (0, 4.85, 6.5), 0.7)
+        estel_avet.emis = estel_avet.emis + 0.6
+        self.ciutat = uneix(edificis + [poble, terra, avet_gran, estel_avet])
+        self.estel3d = estel(rng, d * 2.2)
         self.esclats = []
         pal = [(1, .82, .4), (1, .42, .55), (.5, .95, .65), (.55, .75, 1), (1, .65, .9), (1, .97, .85)]
         for k, t0 in enumerate([0.5, 1.2, 1.9, 2.5, 3.2, 3.9, 4.5, 5.2]):
-            c = np.array([rng.uniform(-7, 7), rng.uniform(5.5, 9.5), rng.uniform(5, 9)])
-            m = 340
+            c = np.array([rng.uniform(-8, 8), rng.uniform(7.5, 11.5), rng.uniform(6, 10)])
+            m = 360
             dirs = _norm(rng.normal(size=(m, 3)))
-            vel = rng.uniform(0.85, 1.1, m)[:, None] * 2.8
+            vel = rng.uniform(0.85, 1.1, m)[:, None] * 3.6
             cols = np.array([pal[k % len(pal)], pal[(k + 2) % len(pal)]])[(rng.random(m) < 0.3).astype(int)]
             self.esclats.append((t0, c, dirs * vel, cols))
 
     def _cua(self, t):
-        """Posició de l'estrella i punts de la cua a l'instant t (fase de l'estrella)."""
+        """Posició de l'estrella i direcció de la cua a l'instant t (fase de l'estrella)."""
         u = t - 6.0
-        arribada = min(1.0, u / 1.6)
+        arribada = min(1.0, u / 1.8)
         e = 1 - (1 - arribada) ** 3
-        inici, fi = np.array([16.0, 12.0, 6.0]), np.array([-5.2, 3.4, 2.5])
+        inici, fi = np.array([20.0, 17.0, 9.0]), np.array([-5.0, 9.6, 6.0])
         pos = inici + (fi - inici) * e
         dir_cua = _norm(inici - fi)
         return pos, dir_cua, min(1.0, 0.25 + u * 0.6)
 
     def grups(self, t):
-        grups = [self.ciutat]
+        grups = [self.ciutat, neu_que_cau(12, 320, ((-16, 16), (0, 13), (-3, 12)), t, self.durada, emis=0.4)]
         for t0, c, vel, cols in self.esclats:
             a = t - t0
-            if -0.9 < a < 0:                                     # coet que puja
+            if -0.9 < a < 0:
                 s = (a + 0.9) / 0.9
                 p = np.array([[c[0], c[1] * s - k * 0.25, c[2]] for k in range(6)])
                 grups.append(particules(p, (1, 0.85, 0.6), np.linspace(1.2, 0.2, 6)))
@@ -1005,35 +1098,34 @@ class Focs(Escena3D):
                 if a > 1.2:
                     brill = brill * (hash1(np.arange(len(p)) + math.floor(t * 12) * 17) > 0.35)
                 grups.append(particules(p, cols, brill))
-                cua = c + desp * 0.82 + [0, -0.55 * a * a, 0]
-                grups.append(particules(cua, cols * 0.8, brill * 0.35))
+                grups.append(particules(c + desp * 0.82 + [0, -0.55 * a * a, 0], cols * 0.8, brill * 0.35))
         if 6.0 <= t < 17.0:
             pos, dir_cua, llarg = self._cua(t)
             apaga = 1.0 if t < 16.0 else max(0.0, 17.0 - t)
-            gir = Ry(0.4 * math.sin(t * 1.3)) @ Rz(0.3 * math.sin(t * 0.7))
-            estel = mou(self.estel3d, gir, pos, 1.6)
-            estel.col[:] = (1.0, 0.85, 0.35)
+            gir = Ry(0.45 * math.sin(t * 1.3)) @ Rz(0.25 * math.sin(t * 0.7))
+            estel = mou(self.estel3d, gir, pos, self.ESCALA_ESTEL)
+            estel.col = np.tile([1.0, 0.85, 0.35], (len(estel.pos), 1))
             estel.emis = estel.emis * apaga + 0.3 * apaga
             grups.append(estel)
-            k = 1600
+            k = 1800
             s = np.linspace(0, 1, k)
             perp = _norm(np.cross(dir_cua, [0, 0, 1.0]))
             fil = np.repeat([-1, 0, 1], k)
             ss = np.tile(s, 3)
-            punts = pos + np.outer(ss * 12 * llarg, dir_cua) + np.outer(fil * (0.15 + 0.9 * ss), perp)
-            punts += np.column_stack([np.zeros(3 * k), 0.08 * np.sin(ss * 30 + t * 5), np.zeros(3 * k)])
+            punts = pos + np.outer(0.9 + ss * 15 * llarg, dir_cua) + np.outer(fil * (0.25 + 1.2 * ss), perp)
+            punts += np.column_stack([np.zeros(3 * k), 0.1 * np.sin(ss * 30 + t * 5), np.zeros(3 * k)])
             br = 1.3 * (1 - ss) ** 1.3 * apaga * (hash1(np.arange(3 * k) * 3.1) > ss * 0.7)
             grups.append(particules(punts, np.where(ss[:, None] < 0.35, [1.0, 0.9, 0.55], [0.95, 0.72, 0.32]), br))
         return uneix(grups)
 
     def superposa(self, t, car, fg, Z):
-        if not (6.0 + 1.6 <= t < 16.5):
+        if not (6.0 + 1.8 <= t < 16.5):
             return
         pos, dir_cua, llarg = self._cua(t)
-        visibles = int((t - 7.6) / 0.16)
-        k, n = 2.0, 0
+        visibles = int((t - 7.8) / 0.16)
+        k, n = 3.4, 0
         for paraula in self.text.split(' '):
-            centre = pos + dir_cua * (k + len(paraula) * 0.35) * 0.85
+            centre = pos + dir_cua * (k + len(paraula) * 0.4)
             cx, cy, _ = self.projecta(centre)
             fila = int(round(cy[0])) - 1
             x0 = int(round(cx[0] - len(paraula) / 2))
@@ -1046,7 +1138,7 @@ class Focs(Escena3D):
                     car[fila, x0 + i] = lletra
                     fg[fila, x0 + i] = (1.0, 0.97, 0.86)
                 n += 1
-            k += len(paraula) * 0.7 + 1.6
+            k += len(paraula) * 0.8 + 1.8
 
 
 ESCENES = {c.nom: c for c in (Cor, Cotxe, CotxePluja, Patins, Cafe, Avio, Marieta, Foc, Focs)}
