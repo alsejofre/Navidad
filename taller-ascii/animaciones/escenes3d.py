@@ -227,6 +227,7 @@ class Escena3D:
     exposicio = 1.0
     bloom = 0.35
     qualitat = 1.3
+    boira = None          # (distància on comença, escala) en metres; None = sense boira
 
     def __init__(self, llavor=11):
         self.W, self.H = self.mida
@@ -298,6 +299,14 @@ class Escena3D:
         rgb = base * (llum + emis)[:, None] * 1.1 + esp[:, None] * np.array([1.0, 0.97, 0.90]) * self.exposicio + extra
         rgb += np.where(part, 0, contra * ao * self.exposicio)[:, None] * np.array([0.10, 0.18, 0.38])
         lum = np.clip(llum + emis + esp * 0.7 * self.exposicio + extra.max(1) * 0.6, 0, 1.6)
+        if self.boira:
+            # Boira: el que és lluny s'apaga cap al negre (les llums, menys), i així es llegeix la profunditat
+            z0, escala = self.boira
+            att = np.exp(-np.maximum(0, z[tria] - z0) / escala)
+            f_em = emis / (emis + llum + 1e-6)
+            att = att * (1 - f_em) + (0.3 + 0.7 * att) * f_em
+            rgb = rgb * att[:, None]
+            lum = lum * att
 
         L = np.zeros(Hs * Ws)
         C = np.zeros((Hs * Ws, 3))
