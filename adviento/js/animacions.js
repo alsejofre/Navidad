@@ -284,8 +284,62 @@ const ANIMACIONS = {
   },
 
   // 🎆 Focs artificials.
-  focs() {
+  // 🎆 Focs artificials i, després, una estrella fugaz amb «BON NADAL» a la cua.
+  // Cicle de 17 s: 0–6 focs · 6–16 estrella fugaz (sense coets nous) · 16–17 s'apaga.
+  focs({ text = 'BON NADAL' } = {}) {
     const W = 42, H = 13;
+    const CICLE = 17, INICI = 6, FI = 16;
+    const ESTEL = ['    /\\', '___/**\\___', ' \\******/', ' /**/\\**\\', '/_/    \\_\\'];
+    const estelFugac = (ll, u, apaga) => {
+      // u = segons des que entra l'estrella. Entra des de dalt a la dreta i s'atura a baix a l'esquerra.
+      const arribada = Math.min(1, u / 1.6);
+      const e = 1 - (1 - arribada) ** 3;
+      const x0 = Math.round(48 + (3 - 48) * e);
+      const y0 = Math.round(-5 + (6 - (-5)) * e);
+      const pal = apaga
+        ? ['#7a6a40', '#5d5232', '#463e28', '#6b6450']
+        : ['#ffe08a', '#e8c26a', '#b39250', '#fff6dc'];
+      // Cua: tres estels en ventall que surten de la punta dreta de l'estrella cap amunt a la dreta
+      const cx = x0 + 10, cy = y0 + 1;
+      const llarg = Math.min(30, 6 + u * 22);
+      const PENDENT = 4.6, CORBA = 0.8;
+      const yCua = (k, despl) => {
+        const s = k / 30;
+        return cy - s * PENDENT - CORBA * s * s + despl * (0.35 + 1.3 * s);
+      };
+      for (const despl of [-1, 0, 1]) {
+        for (let k = 0; k <= llarg; k++) {
+          const s = k / 30;
+          if (despl !== 0 && s > 0.55 && hash(k * 3 + despl) < (s - 0.55) * 1.8) continue;   // s'esfilagarsa
+          const ch = s < 0.35 ? '=' : s < 0.75 ? '-' : '.';
+          ll.posa(cx + k, Math.round(yCua(k, despl)), ch, pal[s < 0.3 ? 0 : s < 0.62 ? 1 : 2]);
+        }
+      }
+      // Lletres dins la cua (estel del mig), apareixent d'una en una
+      if (arribada >= 1) {
+        const visibles = Math.floor((u - 1.6) / 0.18);
+        // Cada paraula sencera al seu esglaó de la cua, perquè es llegeixi bé
+        let k = 3, n = 0;
+        for (const paraula of text.split(' ')) {
+          const fila = Math.round(yCua(k + paraula.length / 2, 0));
+          if (n < visibles) for (let i = -1; i <= paraula.length; i++) ll.posa(cx + k + i, fila, ' ');
+          [...paraula].forEach((lletra, i) => {
+            if (n++ < visibles) ll.posa(cx + k + i, fila, lletra, pal[3]);
+          });
+          k += paraula.length + 3;
+        }
+        // Espurnes al voltant
+        for (let i = 0; i < 8; i++) {
+          if (hash(i + Math.floor(u * 6) * 13) > 0.6) {
+            const k = 4 + hash(i * 5) * 24;
+            ll.posa(cx + k, yCua(k, 0) + (hash(i * 9) > 0.5 ? -2.4 : 2.4), i % 3 ? '.' : '+', pal[0]);
+          }
+        }
+      }
+      ll.dibuix(x0, y0, ESTEL, pal[0]);
+      ll.text(x0 + 4, y0 + 1, '**', pal[3]);
+      ll.text(x0 + 2, y0 + 2, '******', pal[3]);
+    };
     const COLORS = ['#ffd166', '#ef6f8a', '#7ed6a5', '#8ecae6', '#f4a6c0', '#fff3d6'];
     const coets = [];
     const particules = [];
@@ -293,7 +347,9 @@ const ANIMACIONS = {
     return {
       w: W, h: H,
       pinta(ll, t, dt) {
-        if (t > proper) {
+        const c = t % CICLE;
+        const estel = c >= INICI && c < FI + 1;
+        if (t > proper && !estel) {
           coets.push({ x: 5 + Math.random() * (W - 10), y: H - 1, alt: 2 + Math.random() * 4, color: COLORS[Math.floor(Math.random() * COLORS.length)] });
           proper = t + 0.3 + Math.random() * 0.5;
         }
@@ -321,6 +377,7 @@ const ANIMACIONS = {
           p.vx *= 0.96;
           ll.posa(p.x, p.y, p.vida > 0.9 ? '*' : p.vida > 0.45 ? '+' : '.', p.color);
         }
+        if (estel) estelFugac(ll, c - INICI, c >= FI);
         ll.text(0, H - 1, '_/\\__|^|___/\\/\\____|^^|__/\\___|^|__/\\___', '#3e4a5a');
       },
     };
