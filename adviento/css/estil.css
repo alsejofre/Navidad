@@ -494,3 +494,21 @@ header, main { position: relative; z-index: 1; max-width: 720px; margin: 0 auto;
 }
 .paraules-sopa li { padding: 2px 8px; border-radius: 999px; }
 .paraules-sopa li.feta { background: var(--c); text-decoration: line-through; text-decoration-color: rgba(59, 42, 36, .45); }
+
+/* ---------- Animacions ASCII ---------- */
+.ascii.anim {
+  font-size: min(.85rem, 2.75vw);
+  line-height: 1.12;
+  text-align: center;
+  background: #0f1714;
+  margin: 12px 0;
+}
+.anim-canvas {
+  position: relative;
+  margin: 12px 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+}
+.anim-canvas canvas { display: block; width: 100%; }
+.anim-avis { color: #cfc6b4; text-align: center; padding: 40px 0; margin: 0; }

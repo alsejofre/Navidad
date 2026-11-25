@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Uso: python3 exporta_web.py [sortida.html] [--mida 84x62] [--segons 32] [--fps 12] [--missatge "Bon Nadal!"]
+"""Uso: python3 exporta_web.py [sortida.html|sortida.json] [--mida 84x62] [--segons 32] [--fps 12] [--missatge "Bon Nadal!"]
 
 Graba l'arbre 3D (arbre_giratori.py) i el desa com UN SOL fitxer .html autònom: s'obre al navegador
 del mòbil o de l'ordinador sense internet ni res instal·lat. Ideal per enviar per WhatsApp.
@@ -155,6 +155,14 @@ def main():
             .replace('__W__', str(W)).replace('__H__', str(H)).replace('__FPS__', str(args.fps))
             .replace('__BUCLE__', str(int(T_SENSE_INTRO * args.fps))).replace('__N__', str(total))
             .replace('__OFFSETS__', ','.join(map(str, offsets))).replace('__COMPRIMIT__', 'true' if args.comprimit else 'false').replace('__DADES__', dades))
+    if args.sortida.endswith('.json'):
+        # Format per al calendari (adviento/anim/): només les dades, sense reproductor
+        import json
+        with open(args.sortida, 'w', encoding='utf-8') as f:
+            json.dump({'W': W, 'H': H, 'fps': args.fps, 'bucle': int(T_SENSE_INTRO * args.fps), 'n': total,
+                       'offsets': offsets, 'dades': dades}, f, separators=(',', ':'))
+        print(f'✓ {args.sortida} ({os.path.getsize(args.sortida) / 1e6:.1f} MB)', file=sys.stderr)
+        return
     with open(args.sortida, 'w', encoding='utf-8') as f:
         f.write(html)
     print(f'✓ {args.sortida} ({len(html) / 1e6:.1f} MB)', file=sys.stderr)

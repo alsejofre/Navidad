@@ -127,6 +127,7 @@ Si un día tiene pista (`diesPista`), se muestra **además** de su contenido nor
 - **Juegos con castigo:** trivia con menos de la mitad de aciertos, memory con demasiados intentos o rendirse en la adivinanza (botón tras 3 fallos) → recuadro de castigo + «Tornar-ho a provar»; el premio solo se ve al ganar. Castigo propio por día con el campo `castig`; si no hay, uno genérico de `vistes.js`.
 - **Música:** popurrí de villancicos de dominio público (Jingle Bells, We Wish You a Merry Christmas, Deck the Halls) en caja de música (Web Audio).
 - **Estilo de los textos:** usar «convido», nunca «invito».
+- **Animaciones ASCII** (`adviento/js/animacions.js`): campo `"animacio"` en un día, `"nom"` o `{"nom": …, opciones}`. Disponibles: `arbre3d` (fotogramas precalculados en `adviento/anim/arbre.json`, generados con `taller-ascii/animaciones/exporta_web.py adviento/anim/arbre.json --mida 60x40 --fps 10 --segons 28 --missatge ""`), `cor`, `cotxe` (`{"pluja": true}` = montañas y lluvia), `patins`, `cafe`, `avio`, `marieta`, `foc`, `focs`. Se paran al cerrar el día y respetan `prefers-reduced-motion`.
 - El usuario irá dejando comentarios durante los días: aplicarlos en `privado/contingut.json`, republicar la vista previa y pasarle la copia nueva.
 
 ## Pendiente o abierto

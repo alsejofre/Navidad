@@ -1,6 +1,7 @@
 // Contingut de cada dia, cartera de vals i pantalla d'aniversari.
 import { el, magatzem } from './util.js';
 import { creaJoc } from './jocs.js';
+import { creaAnimacio } from './animacions.js';
 import * as so from './so.js';
 import { confeti } from './efectes.js';
 
@@ -118,6 +119,7 @@ export function pintaDia(n, contingut) {
     }
 
     if (d.ascii) parts.push(el('pre', { class: 'ascii' }, d.ascii));
+    if (d.animacio) parts.push(creaAnimacio(d.animacio));
 
     if (d.tipus === 'joc') {
       const jocs = magatzem.llegeix('jocs', {});
